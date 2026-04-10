@@ -227,54 +227,6 @@ tr:hover td { background: #fafbfc; }
 /* Tags */
 .tag { display: inline-block; padding: 2px 8px; background: var(--primary-light); color: var(--primary-dark); border-radius: 6px; font-size: 12px; font-weight: 600; }
 
-/* Article Results */
-.article-list { display: flex; flex-direction: column; gap: 10px; }
-.article-row {
-  display: flex; align-items: center; gap: 14px; padding: 14px;
-  border: 1px solid var(--border); border-radius: 8px; transition: all 0.2s;
-}
-.article-row:hover { border-color: var(--primary); background: var(--primary-light); }
-.article-rank {
-  width: 32px; height: 32px; border-radius: 50%; background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 800; color: var(--text-light); flex-shrink: 0;
-}
-.article-rank.top3 { background: var(--primary); color: white; }
-.article-thumb {
-  width: 80px; height: 56px; border-radius: 6px; object-fit: cover; flex-shrink: 0;
-  background: var(--bg);
-}
-.article-info { flex: 1; min-width: 0; }
-.article-title {
-  font-size: 14px; font-weight: 600; line-height: 1.4;
-  overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
-  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-}
-.article-title a { color: var(--text); text-decoration: none; }
-.article-title a:hover { color: var(--primary); }
-.article-meta { font-size: 12px; color: var(--text-light); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 8px; }
-.article-likes {
-  font-size: 18px; font-weight: 800; color: var(--primary-dark);
-  flex-shrink: 0; text-align: center; min-width: 60px;
-}
-.article-likes small { display: block; font-size: 10px; font-weight: 600; color: var(--text-light); }
-.article-price-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
-.article-price-tag.free { background: #dbeafe; color: #1d4ed8; }
-.article-price-tag.paid { background: #fef3c7; color: #92400e; }
-.sort-bar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
-.sort-btn {
-  padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px;
-  background: white; font-size: 12px; font-weight: 600; cursor: pointer;
-}
-.sort-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-.scrape-loading { text-align: center; padding: 32px; color: var(--text-light); }
-.scrape-loading .spinner {
-  width: 32px; height: 32px; border: 3px solid var(--border);
-  border-top-color: var(--primary); border-radius: 50%;
-  animation: spin 0.8s linear infinite; margin: 0 auto 12px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
 /* Simulator */
 .sim-result {
   background: linear-gradient(135deg, #f5f3ff, #ede9fe); border: 2px solid var(--primary);
@@ -438,32 +390,69 @@ input[type="range"]::-webkit-slider-thumb {
 
   <div class="card">
     <div class="card-title">記事リサーチ</div>
-    <div class="card-desc">ジャンルのキーワードでnoteの記事を取得し、スキ順に分析できます</div>
+    <div class="card-desc">キーワードでnoteの記事をスキ順に検索し、売れ筋を分析しましょう</div>
     <div class="filter-bar">
       <div class="form-group" style="flex:2">
         <label>検索キーワード</label>
         <input type="text" id="scrapeKeyword" placeholder="例: 副業、ダイエット、プログラミング">
       </div>
       <div class="form-group">
-        <label>取得件数</label>
-        <select id="scrapeSize">
-          <option value="10">10件</option>
-          <option value="20" selected>20件</option>
-          <option value="40">40件</option>
+        <label>並び順</label>
+        <select id="scrapeSort">
+          <option value="like">スキ順（人気順）</option>
+          <option value="new">新着順</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>記事タイプ</label>
-        <select id="scrapeType">
-          <option value="">すべて</option>
-          <option value="free">無料のみ</option>
-          <option value="paid">有料のみ</option>
-        </select>
-      </div>
-      <button class="btn btn-primary" id="scrapeBtn" onclick="scrapeNotes()">記事を取得</button>
+      <button class="btn btn-primary" onclick="openNoteSearch()">noteで検索</button>
     </div>
-    <div id="scrapeStatus" class="text-sm text-light mb-12" style="display:none"></div>
-    <div id="scrapeResults"></div>
+
+    <div class="mt-16" id="researchGuide" style="display:none">
+      <div style="background:var(--primary-light);border-radius:8px;padding:16px">
+        <strong style="font-size:14px">「<span id="researchKw"></span>」のリサーチ中 ...</strong>
+        <p class="text-sm text-light mt-8">noteの検索結果が別タブで開いています。以下の視点でチェックしましょう</p>
+      </div>
+
+      <div class="mt-16" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+        <div style="border:1px solid var(--border);border-radius:8px;padding:16px">
+          <strong class="text-sm">スキ数をチェック</strong>
+          <ul style="font-size:13px;padding-left:18px;margin-top:8px;line-height:1.8;color:var(--text-light)">
+            <li>TOP3記事のスキ数はいくつか？</li>
+            <li>100スキ以上の記事は何本あるか？</li>
+            <li>スキ数と記事タイプ（無料/有料）の関係</li>
+          </ul>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:8px;padding:16px">
+          <strong class="text-sm">タイトルパターン分析</strong>
+          <ul style="font-size:13px;padding-left:18px;margin-top:8px;line-height:1.8;color:var(--text-light)">
+            <li>数字が入っているタイトルが多いか？</li>
+            <li>【】や「」の使い方</li>
+            <li>どんなフック（冒頭の引き）が多いか</li>
+          </ul>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:8px;padding:16px">
+          <strong class="text-sm">有料記事の傾向</strong>
+          <ul style="font-size:13px;padding-left:18px;margin-top:8px;line-height:1.8;color:var(--text-light)">
+            <li>有料記事の価格帯は？</li>
+            <li>無料で見せている部分の割合</li>
+            <li>有料ラインの位置（どこで区切っているか）</li>
+          </ul>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:8px;padding:16px">
+          <strong class="text-sm">著者の特徴</strong>
+          <ul style="font-size:13px;padding-left:18px;margin-top:8px;line-height:1.8;color:var(--text-light)">
+            <li>上位記事の著者は同じ人が多い？</li>
+            <li>フォロワー数と記事のスキ数の関係</li>
+            <li>プロフィールの書き方・肩書き</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-16">
+        <strong class="text-sm">リサーチメモ</strong>
+        <div class="card-desc">気づいたことをメモしておきましょう（自動保存されます）</div>
+        <textarea id="researchMemo" rows="4" placeholder="例: スキ数TOP3はすべて無料記事。有料記事は500〜1500円が多い。タイトルに数字が入っている記事が上位に多い..." oninput="saveResearchMemo()"></textarea>
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -850,147 +839,37 @@ function renderSkillMatches() {
 }
 
 // ========================================
-// Note Article Scraping
+// Note Search & Research Guide
 // ========================================
-let scrapedArticles = [];
-let currentSort = 'likes';
-
 function pickGenreKeyword(tag) {
   document.getElementById('scrapeKeyword').value = tag;
   document.getElementById('scrapeKeyword').scrollIntoView({ behavior: 'smooth', block: 'center' });
-  document.getElementById('scrapeKeyword').focus();
-  showToast(`「${tag}」をセットしました。「記事を取得」を押してください`);
+  showToast(`「${tag}」をセットしました`);
 }
 
-async function scrapeNotes() {
+function openNoteSearch() {
   const keyword = document.getElementById('scrapeKeyword').value.trim();
   if (!keyword) { showToast('キーワードを入力してください'); return; }
-  const size = document.getElementById('scrapeSize').value;
-  const typeFilter = document.getElementById('scrapeType').value;
-  const btn = document.getElementById('scrapeBtn');
-  const results = document.getElementById('scrapeResults');
-  const status = document.getElementById('scrapeStatus');
+  const sort = document.getElementById('scrapeSort').value;
+  const sortParam = sort === 'like' ? 'like' : 'new';
+  const url = `https://note.com/search?q=${encodeURIComponent(keyword)}&context=note&sort=${sortParam}`;
+  window.open(url, '_blank');
 
-  btn.disabled = true;
-  btn.textContent = '取得中...';
-  results.innerHTML = '<div class="scrape-loading"><div class="spinner"></div>noteから記事を取得しています...</div>';
-  status.style.display = 'none';
+  document.getElementById('researchKw').textContent = keyword;
+  document.getElementById('researchGuide').style.display = 'block';
+  document.getElementById('researchGuide').scrollIntoView({ behavior: 'smooth' });
 
-  try {
-    const apiUrl = `https://note.com/api/v3/searches?context=note&q=${encodeURIComponent(keyword)}&size=${size}&sort=like_count`;
-    const res = await fetch(apiUrl, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0',
-        'Referer': 'https://note.com/'
-      }
-    });
-
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    const json = await res.json();
-    const notes = json?.data?.notes?.contents || [];
-
-    if (!notes.length) {
-      results.innerHTML = '<div class="empty-state"><p>記事が見つかりませんでした。別のキーワードを試してください</p></div>';
-      return;
-    }
-
-    scrapedArticles = notes.map(n => ({
-      title: n.name || '',
-      url: n.user?.urlname ? `https://note.com/${n.user.urlname}/n/${n.key}` : '#',
-      likes: n.like_count || 0,
-      comments: n.comment_count || 0,
-      price: n.price || 0,
-      isFree: n.price === 0,
-      author: n.user?.nickname || n.user?.name || '不明',
-      authorUrl: n.user?.urlname ? `https://note.com/${n.user.urlname}` : '#',
-      thumb: n.eyecatch || n.sp_eyecatch || '',
-      publishedAt: n.publish_at || '',
-      imageCount: n.image_count || 0,
-    }));
-
-    // Filter by type
-    if (typeFilter === 'free') scrapedArticles = scrapedArticles.filter(a => a.isFree);
-    else if (typeFilter === 'paid') scrapedArticles = scrapedArticles.filter(a => !a.isFree);
-
-    currentSort = 'likes';
-    status.style.display = 'block';
-    status.textContent = `「${keyword}」で ${scrapedArticles.length}件の記事を取得しました`;
-    renderScrapedArticles();
-  } catch (err) {
-    console.error(err);
-    results.innerHTML = `<div class="empty-state"><p>取得に失敗しました。<br>note.comへ直接アクセスしている場合のみ動作します。<br><span class="text-sm text-light">${err.message}</span></p></div>`;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '記事を取得';
-  }
+  // Load saved memo for this keyword
+  const memos = D.researchMemos || {};
+  document.getElementById('researchMemo').value = memos[keyword] || '';
 }
 
-function sortScrapedArticles(key) {
-  currentSort = key;
-  if (key === 'likes') scrapedArticles.sort((a, b) => b.likes - a.likes);
-  else if (key === 'comments') scrapedArticles.sort((a, b) => b.comments - a.comments);
-  else if (key === 'price_high') scrapedArticles.sort((a, b) => b.price - a.price);
-  else if (key === 'price_low') scrapedArticles.sort((a, b) => a.price - b.price);
-  else if (key === 'new') scrapedArticles.sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''));
-  renderScrapedArticles();
-}
-
-function renderScrapedArticles() {
-  if (!scrapedArticles.length) {
-    document.getElementById('scrapeResults').innerHTML = '<div class="empty-state"><p>記事がありません</p></div>';
-    return;
-  }
-
-  const sortBtns = [
-    { key: 'likes', label: 'スキ順' },
-    { key: 'comments', label: 'コメント順' },
-    { key: 'price_high', label: '価格高い順' },
-    { key: 'price_low', label: '価格安い順' },
-    { key: 'new', label: '新しい順' },
-  ];
-
-  // Stats summary
-  const totalLikes = scrapedArticles.reduce((s, a) => s + a.likes, 0);
-  const avgLikes = Math.round(totalLikes / scrapedArticles.length);
-  const freeCount = scrapedArticles.filter(a => a.isFree).length;
-  const paidCount = scrapedArticles.length - freeCount;
-  const avgPrice = paidCount ? Math.round(scrapedArticles.filter(a => !a.isFree).reduce((s, a) => s + a.price, 0) / paidCount) : 0;
-
-  let html = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:16px">
-      <div class="pricing-item"><div class="pricing-range">${scrapedArticles.length}</div><div class="pricing-label">記事数</div></div>
-      <div class="pricing-item"><div class="pricing-range">${avgLikes.toLocaleString()}</div><div class="pricing-label">平均スキ数</div></div>
-      <div class="pricing-item"><div class="pricing-range">${freeCount} / ${paidCount}</div><div class="pricing-label">無料 / 有料</div></div>
-      ${paidCount ? `<div class="pricing-item"><div class="pricing-range">${avgPrice.toLocaleString()}円</div><div class="pricing-label">有料平均価格</div></div>` : ''}
-    </div>
-    <div class="sort-bar">
-      <span class="text-sm text-light">並び替え:</span>
-      ${sortBtns.map(b => `<button class="sort-btn ${currentSort === b.key ? 'active' : ''}" onclick="sortScrapedArticles('${b.key}')">${b.label}</button>`).join('')}
-    </div>
-    <div class="article-list">`;
-
-  scrapedArticles.forEach((a, i) => {
-    const rank = i + 1;
-    const dateStr = a.publishedAt ? new Date(a.publishedAt).toLocaleDateString('ja-JP') : '';
-    html += `
-      <div class="article-row">
-        <div class="article-rank ${rank <= 3 ? 'top3' : ''}">${rank}</div>
-        ${a.thumb ? `<img class="article-thumb" src="${a.thumb}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
-        <div class="article-info">
-          <div class="article-title"><a href="${a.url}" target="_blank" rel="noopener">${a.title}</a></div>
-          <div class="article-meta">
-            <span><a href="${a.authorUrl}" target="_blank" rel="noopener" style="color:inherit">${a.author}</a></span>
-            ${dateStr ? `<span>${dateStr}</span>` : ''}
-            <span class="article-price-tag ${a.isFree ? 'free' : 'paid'}">${a.isFree ? '無料' : a.price.toLocaleString() + '円'}</span>
-          </div>
-        </div>
-        <div class="article-likes">${a.likes.toLocaleString()}<small>スキ</small></div>
-      </div>`;
-  });
-
-  html += '</div>';
-  document.getElementById('scrapeResults').innerHTML = html;
+function saveResearchMemo() {
+  const keyword = document.getElementById('researchKw').textContent;
+  if (!keyword) return;
+  if (!D.researchMemos) D.researchMemos = {};
+  D.researchMemos[keyword] = document.getElementById('researchMemo').value;
+  saveData(D);
 }
 
 // ========================================
