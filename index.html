@@ -227,6 +227,54 @@ tr:hover td { background: #fafbfc; }
 /* Tags */
 .tag { display: inline-block; padding: 2px 8px; background: var(--primary-light); color: var(--primary-dark); border-radius: 6px; font-size: 12px; font-weight: 600; }
 
+/* Article Results */
+.article-list { display: flex; flex-direction: column; gap: 10px; }
+.article-row {
+  display: flex; align-items: center; gap: 14px; padding: 14px;
+  border: 1px solid var(--border); border-radius: 8px; transition: all 0.2s;
+}
+.article-row:hover { border-color: var(--primary); background: var(--primary-light); }
+.article-rank {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: var(--text-light); flex-shrink: 0;
+}
+.article-rank.top3 { background: var(--primary); color: white; }
+.article-thumb {
+  width: 80px; height: 56px; border-radius: 6px; object-fit: cover; flex-shrink: 0;
+  background: var(--bg);
+}
+.article-info { flex: 1; min-width: 0; }
+.article-title {
+  font-size: 14px; font-weight: 600; line-height: 1.4;
+  overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.article-title a { color: var(--text); text-decoration: none; }
+.article-title a:hover { color: var(--primary); }
+.article-meta { font-size: 12px; color: var(--text-light); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 8px; }
+.article-likes {
+  font-size: 18px; font-weight: 800; color: var(--primary-dark);
+  flex-shrink: 0; text-align: center; min-width: 60px;
+}
+.article-likes small { display: block; font-size: 10px; font-weight: 600; color: var(--text-light); }
+.article-price-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+.article-price-tag.free { background: #dbeafe; color: #1d4ed8; }
+.article-price-tag.paid { background: #fef3c7; color: #92400e; }
+.sort-bar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+.sort-btn {
+  padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px;
+  background: white; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.sort-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+.scrape-loading { text-align: center; padding: 32px; color: var(--text-light); }
+.scrape-loading .spinner {
+  width: 32px; height: 32px; border: 3px solid var(--border);
+  border-top-color: var(--primary); border-radius: 50%;
+  animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* Simulator */
 .sim-result {
   background: linear-gradient(135deg, #f5f3ff, #ede9fe); border: 2px solid var(--primary);
@@ -387,6 +435,37 @@ input[type="range"]::-webkit-slider-thumb {
     </div>
     <div class="genre-grid" id="genreGrid"></div>
   </div>
+
+  <div class="card">
+    <div class="card-title">記事リサーチ</div>
+    <div class="card-desc">ジャンルのキーワードでnoteの記事を取得し、スキ順に分析できます</div>
+    <div class="filter-bar">
+      <div class="form-group" style="flex:2">
+        <label>検索キーワード</label>
+        <input type="text" id="scrapeKeyword" placeholder="例: 副業、ダイエット、プログラミング">
+      </div>
+      <div class="form-group">
+        <label>取得件数</label>
+        <select id="scrapeSize">
+          <option value="10">10件</option>
+          <option value="20" selected>20件</option>
+          <option value="40">40件</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>記事タイプ</label>
+        <select id="scrapeType">
+          <option value="">すべて</option>
+          <option value="free">無料のみ</option>
+          <option value="paid">有料のみ</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="scrapeBtn" onclick="scrapeNotes()">記事を取得</button>
+    </div>
+    <div id="scrapeStatus" class="text-sm text-light mb-12" style="display:none"></div>
+    <div id="scrapeResults"></div>
+  </div>
+
   <div class="card">
     <div class="card-title">スキルマッチング</div>
     <div class="card-desc">興味・経験を選ぶとマッチ度の高いジャンルを提案します</div>
@@ -747,7 +826,7 @@ function renderGenres(list) {
   g.innerHTML = list.map(x => {
     const rec = x.profit>=4&&x.competition<=2;
     const badge = x.badge==='hot'?'<span class="genre-badge badge-hot">人気</span>':x.badge==='blue'?'<span class="genre-badge badge-blue">狙い目</span>':x.badge==='new'?'<span class="genre-badge badge-new">成長中</span>':'';
-    return `<div class="genre-card ${rec?'recommended':''}"><div class="genre-name">${x.name} ${badge} ${rec?'<span class="tag">おすすめ</span>':''}</div><div class="genre-scores"><div class="genre-score-row"><span>市場規模</span>${scoreDots(x.market,5,'market')}</div><div class="genre-score-row"><span>競合度</span>${scoreDots(x.competition,5,'competition')}</div><div class="genre-score-row"><span>収益性</span>${scoreDots(x.profit,5,'profit')}</div></div><div class="genre-desc">${x.desc}</div></div>`;
+    return `<div class="genre-card ${rec?'recommended':''}" onclick="pickGenreKeyword('${x.tags[0]}')" style="cursor:pointer" title="クリックで記事リサーチに反映"><div class="genre-name">${x.name} ${badge} ${rec?'<span class="tag">おすすめ</span>':''}</div><div class="genre-scores"><div class="genre-score-row"><span>市場規模</span>${scoreDots(x.market,5,'market')}</div><div class="genre-score-row"><span>競合度</span>${scoreDots(x.competition,5,'competition')}</div><div class="genre-score-row"><span>収益性</span>${scoreDots(x.profit,5,'profit')}</div></div><div class="genre-desc">${x.desc}</div></div>`;
   }).join('');
 }
 
@@ -768,6 +847,150 @@ function renderSkillMatches() {
   const mc={};selectedSkills.forEach(s=>(skillToGenre[s]||[]).forEach(g=>mc[g]=(mc[g]||0)+1));
   const sorted=Object.entries(mc).sort((a,b)=>b[1]-a[1]);
   c.innerHTML='<strong class="text-sm">マッチ結果:</strong>'+sorted.map(([n,cnt])=>{const g=genres.find(x=>x.name===n);const pct=Math.round(cnt/selectedSkills.length*100);return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)"><div style="width:50px;text-align:center"><span class="tag">${pct}%</span></div><div style="flex:1"><strong style="font-size:14px">${n}</strong>${g?`<div class="text-sm text-light">${g.desc}</div>`:''}</div></div>`;}).join('');
+}
+
+// ========================================
+// Note Article Scraping
+// ========================================
+let scrapedArticles = [];
+let currentSort = 'likes';
+
+function pickGenreKeyword(tag) {
+  document.getElementById('scrapeKeyword').value = tag;
+  document.getElementById('scrapeKeyword').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById('scrapeKeyword').focus();
+  showToast(`「${tag}」をセットしました。「記事を取得」を押してください`);
+}
+
+async function scrapeNotes() {
+  const keyword = document.getElementById('scrapeKeyword').value.trim();
+  if (!keyword) { showToast('キーワードを入力してください'); return; }
+  const size = document.getElementById('scrapeSize').value;
+  const typeFilter = document.getElementById('scrapeType').value;
+  const btn = document.getElementById('scrapeBtn');
+  const results = document.getElementById('scrapeResults');
+  const status = document.getElementById('scrapeStatus');
+
+  btn.disabled = true;
+  btn.textContent = '取得中...';
+  results.innerHTML = '<div class="scrape-loading"><div class="spinner"></div>noteから記事を取得しています...</div>';
+  status.style.display = 'none';
+
+  try {
+    const apiUrl = `https://note.com/api/v3/searches?context=note&q=${encodeURIComponent(keyword)}&size=${size}&sort=like_count`;
+    const res = await fetch(apiUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0',
+        'Referer': 'https://note.com/'
+      }
+    });
+
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const json = await res.json();
+    const notes = json?.data?.notes?.contents || [];
+
+    if (!notes.length) {
+      results.innerHTML = '<div class="empty-state"><p>記事が見つかりませんでした。別のキーワードを試してください</p></div>';
+      return;
+    }
+
+    scrapedArticles = notes.map(n => ({
+      title: n.name || '',
+      url: n.user?.urlname ? `https://note.com/${n.user.urlname}/n/${n.key}` : '#',
+      likes: n.like_count || 0,
+      comments: n.comment_count || 0,
+      price: n.price || 0,
+      isFree: n.price === 0,
+      author: n.user?.nickname || n.user?.name || '不明',
+      authorUrl: n.user?.urlname ? `https://note.com/${n.user.urlname}` : '#',
+      thumb: n.eyecatch || n.sp_eyecatch || '',
+      publishedAt: n.publish_at || '',
+      imageCount: n.image_count || 0,
+    }));
+
+    // Filter by type
+    if (typeFilter === 'free') scrapedArticles = scrapedArticles.filter(a => a.isFree);
+    else if (typeFilter === 'paid') scrapedArticles = scrapedArticles.filter(a => !a.isFree);
+
+    currentSort = 'likes';
+    status.style.display = 'block';
+    status.textContent = `「${keyword}」で ${scrapedArticles.length}件の記事を取得しました`;
+    renderScrapedArticles();
+  } catch (err) {
+    console.error(err);
+    results.innerHTML = `<div class="empty-state"><p>取得に失敗しました。<br>note.comへ直接アクセスしている場合のみ動作します。<br><span class="text-sm text-light">${err.message}</span></p></div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '記事を取得';
+  }
+}
+
+function sortScrapedArticles(key) {
+  currentSort = key;
+  if (key === 'likes') scrapedArticles.sort((a, b) => b.likes - a.likes);
+  else if (key === 'comments') scrapedArticles.sort((a, b) => b.comments - a.comments);
+  else if (key === 'price_high') scrapedArticles.sort((a, b) => b.price - a.price);
+  else if (key === 'price_low') scrapedArticles.sort((a, b) => a.price - b.price);
+  else if (key === 'new') scrapedArticles.sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''));
+  renderScrapedArticles();
+}
+
+function renderScrapedArticles() {
+  if (!scrapedArticles.length) {
+    document.getElementById('scrapeResults').innerHTML = '<div class="empty-state"><p>記事がありません</p></div>';
+    return;
+  }
+
+  const sortBtns = [
+    { key: 'likes', label: 'スキ順' },
+    { key: 'comments', label: 'コメント順' },
+    { key: 'price_high', label: '価格高い順' },
+    { key: 'price_low', label: '価格安い順' },
+    { key: 'new', label: '新しい順' },
+  ];
+
+  // Stats summary
+  const totalLikes = scrapedArticles.reduce((s, a) => s + a.likes, 0);
+  const avgLikes = Math.round(totalLikes / scrapedArticles.length);
+  const freeCount = scrapedArticles.filter(a => a.isFree).length;
+  const paidCount = scrapedArticles.length - freeCount;
+  const avgPrice = paidCount ? Math.round(scrapedArticles.filter(a => !a.isFree).reduce((s, a) => s + a.price, 0) / paidCount) : 0;
+
+  let html = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:16px">
+      <div class="pricing-item"><div class="pricing-range">${scrapedArticles.length}</div><div class="pricing-label">記事数</div></div>
+      <div class="pricing-item"><div class="pricing-range">${avgLikes.toLocaleString()}</div><div class="pricing-label">平均スキ数</div></div>
+      <div class="pricing-item"><div class="pricing-range">${freeCount} / ${paidCount}</div><div class="pricing-label">無料 / 有料</div></div>
+      ${paidCount ? `<div class="pricing-item"><div class="pricing-range">${avgPrice.toLocaleString()}円</div><div class="pricing-label">有料平均価格</div></div>` : ''}
+    </div>
+    <div class="sort-bar">
+      <span class="text-sm text-light">並び替え:</span>
+      ${sortBtns.map(b => `<button class="sort-btn ${currentSort === b.key ? 'active' : ''}" onclick="sortScrapedArticles('${b.key}')">${b.label}</button>`).join('')}
+    </div>
+    <div class="article-list">`;
+
+  scrapedArticles.forEach((a, i) => {
+    const rank = i + 1;
+    const dateStr = a.publishedAt ? new Date(a.publishedAt).toLocaleDateString('ja-JP') : '';
+    html += `
+      <div class="article-row">
+        <div class="article-rank ${rank <= 3 ? 'top3' : ''}">${rank}</div>
+        ${a.thumb ? `<img class="article-thumb" src="${a.thumb}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
+        <div class="article-info">
+          <div class="article-title"><a href="${a.url}" target="_blank" rel="noopener">${a.title}</a></div>
+          <div class="article-meta">
+            <span><a href="${a.authorUrl}" target="_blank" rel="noopener" style="color:inherit">${a.author}</a></span>
+            ${dateStr ? `<span>${dateStr}</span>` : ''}
+            <span class="article-price-tag ${a.isFree ? 'free' : 'paid'}">${a.isFree ? '無料' : a.price.toLocaleString() + '円'}</span>
+          </div>
+        </div>
+        <div class="article-likes">${a.likes.toLocaleString()}<small>スキ</small></div>
+      </div>`;
+  });
+
+  html += '</div>';
+  document.getElementById('scrapeResults').innerHTML = html;
 }
 
 // ========================================

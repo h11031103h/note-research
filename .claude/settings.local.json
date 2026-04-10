@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(open \"/Users/user/Desktop/Claud Code/noteリサーチ/index.html\")",
+      "Bash(gh auth:*)",
+      "Bash(gh repo:*)",
+      "Bash(gh api:*)",
+      "Bash(mkdir -p .github/workflows)",
+      "Bash(gh run:*)",
+      "WebSearch"
+    ]
+  }
+}
