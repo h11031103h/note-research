@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>note リサーチツール</title>
+<style>
+:root {
+  --primary: #8b5cf6;
+  --primary-dark: #6d28d9;
+  --primary-light: #ede9fe;
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --text: #2c3e50;
+  --text-light: #7f8c9b;
+  --border: #e2e8f0;
+  --danger: #e74c3c;
+  --warning: #f39c12;
+  --info: #3498db;
+  --radius: 12px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white; padding: 16px 24px; display: flex; align-items: center;
+  justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  position: sticky; top: 0; z-index: 100;
+}
+.header h1 { font-size: 20px; font-weight: 700; }
+.header-actions { display: flex; gap: 8px; }
+.header-btn {
+  background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+  color: white; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;
+}
+.header-btn:hover { background: rgba(255,255,255,0.3); }
+
+/* Tab Navigation */
+.tab-nav {
+  display: flex; background: var(--card); border-bottom: 2px solid var(--border);
+  padding: 0 8px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.tab-nav::-webkit-scrollbar { height: 0; }
+.tab-btn {
+  padding: 12px 16px; border: none; background: none; font-size: 13px;
+  font-weight: 600; color: var(--text-light); cursor: pointer;
+  border-bottom: 3px solid transparent; white-space: nowrap; transition: all 0.2s;
+}
+.tab-btn:hover { color: var(--primary); }
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+/* Main */
+.main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Cards */
+.card {
+  background: var(--card); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 24px; margin-bottom: 20px;
+}
+.card-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.card-desc { font-size: 13px; color: var(--text-light); margin-bottom: 16px; }
+
+/* Guide */
+.guide-box {
+  background: var(--primary-light); border-left: 4px solid var(--primary);
+  padding: 14px 18px; border-radius: 0 8px 8px 0; margin-bottom: 20px;
+  font-size: 13px; line-height: 1.7;
+}
+.guide-box strong { color: var(--primary-dark); }
+
+/* Forms */
+input, select, textarea {
+  width: 100%; padding: 10px 14px; border: 1px solid var(--border);
+  border-radius: 8px; font-size: 14px; font-family: inherit; background: white;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+}
+textarea { resize: vertical; min-height: 80px; }
+label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.form-group { margin-bottom: 16px; }
+.form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.form-row .form-group { flex: 1; min-width: 150px; }
+
+/* Buttons */
+.btn {
+  padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px;
+  font-weight: 600; cursor: pointer; transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--border); }
+.btn-danger { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+.btn-danger:hover { background: #fecaca; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-info { background: #eff6ff; color: var(--info); border: 1px solid #bfdbfe; }
+
+/* Score */
+.score { display: inline-flex; gap: 2px; }
+.score-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+.score-dot.filled { background: var(--primary); }
+.score-dot.filled.high { background: var(--danger); }
+.score-dot.filled.mid { background: var(--warning); }
+
+/* Genre Grid */
+.genre-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.genre-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 18px; transition: all 0.2s;
+}
+.genre-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-2px); }
+.genre-card.recommended { border-color: var(--primary); background: var(--primary-light); }
+.genre-name { font-size: 16px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.genre-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 700; }
+.badge-hot { background: #fef2f2; color: var(--danger); }
+.badge-blue { background: #eff6ff; color: var(--info); }
+.badge-new { background: #fefce8; color: #a16207; }
+.genre-scores { display: flex; flex-direction: column; gap: 8px; }
+.genre-score-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.genre-desc { font-size: 12px; color: var(--text-light); margin-top: 10px; }
+
+/* Filter */
+.filter-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; align-items: end; }
+.filter-bar .form-group { margin-bottom: 0; flex: 1; min-width: 150px; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+th { background: var(--bg); font-weight: 700; font-size: 12px; color: var(--text-light); text-transform: uppercase; }
+tr:hover td { background: #fafbfc; }
+
+/* Wizard */
+.wizard-steps { display: flex; gap: 4px; margin-bottom: 24px; }
+.wizard-step {
+  flex: 1; text-align: center; padding: 10px; font-size: 12px; font-weight: 600;
+  border-radius: 8px; background: var(--bg); color: var(--text-light);
+}
+.wizard-step.active { background: var(--primary); color: white; }
+.wizard-step.done { background: var(--primary-light); color: var(--primary-dark); }
+.wizard-content { display: none; }
+.wizard-content.active { display: block; }
+.wizard-nav { display: flex; justify-content: space-between; margin-top: 24px; }
+
+/* Persona Card */
+.persona-card {
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe); border: 2px solid var(--primary);
+  border-radius: var(--radius); padding: 24px; margin-bottom: 16px;
+}
+.persona-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.persona-name { font-size: 20px; font-weight: 700; }
+.persona-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.persona-item label { font-size: 11px; color: var(--text-light); text-transform: uppercase; }
+.persona-item p { font-size: 14px; font-weight: 500; margin-top: 2px; }
+
+/* Template */
+.template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.template-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; cursor: pointer; transition: all 0.2s;
+}
+.template-card:hover { border-color: var(--primary); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.template-type { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--primary); margin-bottom: 6px; }
+.template-name { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.template-flow { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; }
+.flow-step { background: var(--bg); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.flow-arrow { color: var(--text-light); font-size: 12px; display: flex; align-items: center; }
+
+/* Title Gen */
+.title-results { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.title-item {
+  background: var(--bg); padding: 12px 16px; border-radius: 8px; font-size: 14px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+/* Chips */
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  padding: 6px 14px; border: 1px solid var(--border); border-radius: 20px;
+  font-size: 13px; cursor: pointer; transition: all 0.2s; user-select: none;
+}
+.chip:hover { border-color: var(--primary); }
+.chip.selected { background: var(--primary); color: white; border-color: var(--primary); }
+
+/* Pricing */
+.pricing-guide { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 12px; }
+.pricing-item { background: var(--bg); padding: 14px; border-radius: 8px; text-align: center; }
+.pricing-range { font-size: 20px; font-weight: 700; color: var(--primary); }
+.pricing-label { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+
+/* Checklist */
+.checklist { list-style: none; }
+.checklist li { padding: 8px 0; font-size: 13px; display: flex; align-items: flex-start; gap: 8px; border-bottom: 1px solid var(--border); }
+.check-icon {
+  width: 20px; height: 20px; border: 2px solid var(--border); border-radius: 4px;
+  flex-shrink: 0; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: all 0.2s; margin-top: 1px;
+}
+.check-icon.checked { background: var(--primary); border-color: var(--primary); color: white; font-size: 12px; }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  z-index: 200; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--card); border-radius: var(--radius); padding: 28px;
+  max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;
+}
+.modal h3 { margin-bottom: 16px; }
+
+/* Empty */
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text-light); }
+.empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+
+/* Tags */
+.tag { display: inline-block; padding: 2px 8px; background: var(--primary-light); color: var(--primary-dark); border-radius: 6px; font-size: 12px; font-weight: 600; }
+
+/* Simulator */
+.sim-result {
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe); border: 2px solid var(--primary);
+  border-radius: var(--radius); padding: 24px; text-align: center; margin-top: 20px;
+}
+.sim-amount { font-size: 36px; font-weight: 800; color: var(--primary-dark); }
+.sim-label { font-size: 14px; color: var(--text-light); margin-top: 4px; }
+.sim-breakdown { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 16px; text-align: center; }
+.sim-item { background: white; padding: 12px; border-radius: 8px; }
+.sim-item-value { font-size: 20px; font-weight: 700; color: var(--text); }
+.sim-item-label { font-size: 11px; color: var(--text-light); }
+
+/* Magazine */
+.mag-slot {
+  border: 1px dashed var(--border); border-radius: 8px; padding: 14px;
+  margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;
+}
+.mag-slot.filled { border-style: solid; background: var(--primary-light); border-color: var(--primary); }
+
+/* Paywall Slider */
+.paywall-visual {
+  background: var(--bg); border-radius: var(--radius); padding: 20px; margin-top: 16px;
+}
+.paywall-bar { height: 24px; border-radius: 12px; display: flex; overflow: hidden; margin: 12px 0; }
+.paywall-free { background: var(--primary); transition: width 0.3s; }
+.paywall-paid { background: var(--warning); transition: width 0.3s; }
+.paywall-labels { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; }
+
+/* Profile Preview */
+.profile-preview {
+  background: white; border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 24px; max-width: 480px; margin: 20px auto;
+}
+.profile-avatar { width: 72px; height: 72px; border-radius: 50%; background: var(--primary-light); display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 12px; }
+.profile-name-preview { font-size: 18px; font-weight: 700; text-align: center; }
+.profile-bio { font-size: 14px; line-height: 1.8; margin-top: 12px; white-space: pre-wrap; }
+
+/* KPI Chart */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.kpi-card-stat {
+  background: white; border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; text-align: center;
+}
+.kpi-value { font-size: 28px; font-weight: 800; color: var(--primary-dark); }
+.kpi-label { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+.kpi-change { font-size: 12px; font-weight: 600; margin-top: 4px; }
+.kpi-change.up { color: var(--primary); }
+.kpi-change.down { color: var(--danger); }
+.chart-container { position: relative; height: 200px; margin-top: 12px; }
+.chart-bar-group { display: flex; align-items: flex-end; gap: 4px; height: 100%; }
+.chart-bar {
+  flex: 1; background: var(--primary); border-radius: 4px 4px 0 0; transition: height 0.3s;
+  position: relative; min-width: 16px;
+}
+.chart-bar:hover { background: var(--primary-dark); }
+.chart-bar-label { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--text-light); white-space: nowrap; }
+.chart-bar-value { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 600; white-space: nowrap; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main { padding: 12px; }
+  .card { padding: 16px; }
+  .filter-bar { flex-direction: column; }
+  .filter-bar .form-group { min-width: 100%; }
+  .genre-grid, .template-grid { grid-template-columns: 1fr; }
+  .tab-btn { padding: 10px 10px; font-size: 12px; }
+  .header h1 { font-size: 16px; }
+  .cal-cell { min-height: 50px; }
+  .cal-cell .cal-event { display: none; }
+  .sim-amount { font-size: 28px; }
+  .form-row { flex-direction: column; }
+  .form-row .form-group { min-width: 100%; }
+}
+
+/* Utility */
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mb-12 { margin-bottom: 12px; }
+.mb-20 { margin-bottom: 20px; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.text-sm { font-size: 13px; }
+.text-light { color: var(--text-light); }
+.text-center { text-align: center; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; background: #1a1a2e; color: white;
+  padding: 12px 20px; border-radius: 8px; font-size: 14px; z-index: 300;
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* Range slider */
+input[type="range"] {
+  -webkit-appearance: none; width: 100%; height: 8px; border-radius: 4px;
+  background: var(--border); outline: none; padding: 0; border: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--primary); cursor: pointer; border: 3px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <h1>note リサーチツール</h1>
+  <div class="header-actions">
+    <button class="header-btn" onclick="exportData()">エクスポート</button>
+    <button class="header-btn" onclick="document.getElementById('importInput').click()">インポート</button>
+    <input type="file" id="importInput" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="genre">ジャンル分析</button>
+  <button class="tab-btn" data-tab="competitor">競合分析</button>
+  <button class="tab-btn" data-tab="persona">ペルソナ設計</button>
+  <button class="tab-btn" data-tab="template">記事構成</button>
+  <button class="tab-btn" data-tab="revenue">収益戦略</button>
+  <button class="tab-btn" data-tab="profile">プロフィール</button>
+  <button class="tab-btn" data-tab="kpi">KPI管理</button>
+</nav>
+
+<main class="main">
+
+<!-- ===== Tab 1: ジャンル分析 ===== -->
+<div id="tab-genre" class="tab-content active">
+  <div class="guide-box">
+    <strong>使い方:</strong> 「市場規模」が大きく「競合度」が低いジャンルがブルーオーシャンです。スキルマッチングであなたに最適なジャンルを見つけましょう。
+  </div>
+  <div class="card">
+    <div class="card-title">ジャンルを絞り込む</div>
+    <div class="filter-bar">
+      <div class="form-group">
+        <label>収益性</label>
+        <select id="filterProfit"><option value="">すべて</option><option value="5">とても高い(5)</option><option value="4">高い(4+)</option><option value="3">普通以上(3+)</option></select>
+      </div>
+      <div class="form-group">
+        <label>競合度</label>
+        <select id="filterCompetition"><option value="">すべて</option><option value="1">とても少ない(1)</option><option value="2">少なめ(2以下)</option><option value="3">普通以下(3以下)</option></select>
+      </div>
+      <div class="form-group">
+        <label>キーワード</label>
+        <input type="text" id="filterKeyword" placeholder="ジャンル名で検索...">
+      </div>
+      <button class="btn btn-primary" onclick="filterGenres()">絞り込み</button>
+      <button class="btn btn-secondary" onclick="resetGenreFilter()">リセット</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="flex-between mb-12">
+      <div class="card-title">ジャンル一覧</div>
+      <div class="text-sm text-light" id="genreCount"></div>
+    </div>
+    <div class="genre-grid" id="genreGrid"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">スキルマッチング</div>
+    <div class="card-desc">興味・経験を選ぶとマッチ度の高いジャンルを提案します</div>
+    <div class="form-group">
+      <label>興味のある分野・得意なこと（複数選択可）</label>
+      <div class="chip-group" id="skillChips"></div>
+    </div>
+    <div class="mt-16" id="matchResults"></div>
+  </div>
+</div>
+
+<!-- ===== Tab 2: 競合分析 ===== -->
+<div id="tab-competitor" class="tab-content">
+  <div class="guide-box">
+    <strong>使い方:</strong> noteで気になるクリエイターの情報を記録して比較しましょう。3〜5アカウント分析すると傾向が見えてきます。
+  </div>
+  <div class="card">
+    <div class="card-title">分析チェックリスト</div>
+    <ul class="checklist" id="competitorChecklist"></ul>
+  </div>
+  <div class="card">
+    <div class="flex-between mb-12">
+      <div><div class="card-title">競合アカウント</div></div>
+      <button class="btn btn-primary" onclick="openCompetitorModal()">+ 追加</button>
+    </div>
+    <div id="competitorList"></div>
+  </div>
+  <div class="card" id="competitorCompare" style="display:none">
+    <div class="card-title">比較表</div>
+    <div class="table-wrap">
+      <table><thead><tr><th>アカウント</th><th>フォロワー</th><th>記事数</th><th>価格帯</th><th>頻度</th><th>強み</th></tr></thead>
+      <tbody id="competitorTableBody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Tab 3: ペルソナ設計 ===== -->
+<div id="tab-persona" class="tab-content">
+  <div class="guide-box">
+    <strong>使い方:</strong> 「誰に向けて書くか」を4ステップで明確にしましょう。ペルソナが明確だと記事が刺さりやすくなります。
+  </div>
+  <div class="card">
+    <div class="flex-between mb-12">
+      <div class="card-title">ペルソナ作成</div>
+      <button class="btn btn-secondary" onclick="resetPersonaWizard()">リセット</button>
+    </div>
+    <div class="wizard-steps">
+      <div class="wizard-step active" data-step="0">Step1 基本情報</div>
+      <div class="wizard-step" data-step="1">Step2 悩み・課題</div>
+      <div class="wizard-step" data-step="2">Step3 情報収集</div>
+      <div class="wizard-step" data-step="3">Step4 購買心理</div>
+    </div>
+    <div class="wizard-content active" id="wizStep0">
+      <div class="form-row">
+        <div class="form-group"><label>ペルソナ名</label><input type="text" id="personaName" placeholder="例: 副業サラリーマン田中さん"></div>
+        <div class="form-group"><label>年齢層</label><select id="personaAge"><option value="">選択</option><option>10代</option><option>20代前半</option><option>20代後半</option><option>30代前半</option><option>30代後半</option><option>40代</option><option>50代以上</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>性別</label><select id="personaGender"><option value="">選択</option><option>男性</option><option>女性</option><option>指定なし</option></select></div>
+        <div class="form-group"><label>職業</label><input type="text" id="personaJob" placeholder="例: IT企業の営業職"></div>
+        <div class="form-group"><label>年収</label><select id="personaIncome"><option value="">選択</option><option>〜300万円</option><option>300〜500万円</option><option>500〜700万円</option><option>700〜1000万円</option><option>1000万円〜</option></select></div>
+      </div>
+    </div>
+    <div class="wizard-content" id="wizStep1">
+      <div class="form-group"><label>悩み・課題</label><div class="chip-group mb-12" id="painChips"></div><textarea id="personaPain" placeholder="テンプレートを選ぶか直接入力"></textarea></div>
+      <div class="form-group"><label>理想の未来</label><textarea id="personaGoal" placeholder="例: 月5万円の副収入を得て不安をなくしたい"></textarea></div>
+      <div class="form-group"><label>これまでに試したこと</label><textarea id="personaTried" placeholder="例: YouTube動画を見たが実践できなかった"></textarea></div>
+    </div>
+    <div class="wizard-content" id="wizStep2">
+      <div class="form-group"><label>使っているSNS</label><div class="chip-group" id="snsChips"></div></div>
+      <div class="form-group mt-16"><label>情報収集の方法</label><div class="chip-group" id="infoChips"></div></div>
+      <div class="form-group mt-16"><label>note利用状況</label><select id="personaNoteUsage"><option value="">選択</option><option>noteをまだ知らない</option><option>読むだけ</option><option>たまに無料記事を読む</option><option>有料記事も買ったことがある</option><option>自分でも書いている</option></select></div>
+    </div>
+    <div class="wizard-content" id="wizStep3">
+      <div class="form-group"><label>月額予算</label><select id="personaBudget"><option value="">選択</option><option>0円（無料のみ）</option><option>〜500円</option><option>500〜1,000円</option><option>1,000〜3,000円</option><option>3,000〜5,000円</option><option>5,000円以上</option></select></div>
+      <div class="form-group"><label>購入の決め手</label><div class="chip-group" id="buyChips"></div></div>
+      <div class="form-group mt-16"><label>購入のハードル</label><div class="chip-group" id="hurdleChips"></div></div>
+      <div class="form-group mt-16"><label>追加メモ</label><textarea id="personaMemo" placeholder="その他"></textarea></div>
+    </div>
+    <div class="wizard-nav">
+      <button class="btn btn-secondary" id="wizPrev" onclick="wizardPrev()" style="visibility:hidden">← 戻る</button>
+      <button class="btn btn-primary" id="wizNext" onclick="wizardNext()">次へ →</button>
+    </div>
+  </div>
+  <div class="card"><div class="card-title mb-12">保存済みペルソナ</div><div id="personaList"></div></div>
+</div>
+
+<!-- ===== Tab 4: 記事構成 ===== -->
+<div id="tab-template" class="tab-content">
+  <div class="guide-box"><strong>使い方:</strong> 記事タイプを選んでテンプレートを確認。タイトルジェネレーターも活用しましょう。</div>
+  <div class="card">
+    <div class="card-title">記事タイプを選択</div>
+    <div class="template-grid" id="templateGrid"></div>
+  </div>
+  <div class="card" id="templateDetail" style="display:none">
+    <div class="flex-between mb-12">
+      <div><div class="card-title" id="templateDetailTitle"></div><div class="card-desc" id="templateDetailDesc"></div></div>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('templateDetail').style.display='none'">閉じる</button>
+    </div>
+    <div class="mb-12"><strong class="text-sm">構成フロー</strong><div class="template-flow mt-8" id="templateFlow"></div></div>
+    <div id="templateSections" class="mt-24"></div>
+    <div class="mt-24"><strong class="text-sm">文字数・価格の目安</strong><div class="pricing-guide" id="templatePricing"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">タイトル案ジェネレーター</div>
+    <div class="filter-bar">
+      <div class="form-group"><label>キーワード</label><input type="text" id="titleKeyword" placeholder="例: 副業、ダイエット"></div>
+      <div class="form-group"><label>ターゲット</label><input type="text" id="titleTarget" placeholder="例: 初心者、30代会社員"></div>
+      <button class="btn btn-primary" onclick="generateTitles()">生成</button>
+    </div>
+    <div class="title-results" id="titleResults"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">価格設定ガイド</div>
+    <div class="pricing-guide">
+      <div class="pricing-item"><div class="pricing-range">100〜300円</div><div class="pricing-label">お試し・入門<br>1,000〜3,000文字</div></div>
+      <div class="pricing-item"><div class="pricing-range">500〜980円</div><div class="pricing-label">スタンダード<br>3,000〜8,000文字</div></div>
+      <div class="pricing-item"><div class="pricing-range">1,480〜2,980円</div><div class="pricing-label">プレミアム<br>8,000〜15,000文字</div></div>
+      <div class="pricing-item"><div class="pricing-range">3,000円〜</div><div class="pricing-label">ハイエンド<br>15,000文字+</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Tab 5: 収益戦略 ===== -->
+<div id="tab-revenue" class="tab-content">
+  <div class="guide-box"><strong>使い方:</strong> 収益シミュレーターで目標を逆算し、マガジン設計と有料ライン設計で戦略を立てましょう。</div>
+
+  <!-- Revenue Simulator -->
+  <div class="card">
+    <div class="card-title">収益シミュレーター</div>
+    <div class="card-desc">想定数値を入力して月間収益を試算</div>
+    <div class="form-row">
+      <div class="form-group"><label>有料記事の単価（円）</label><input type="number" id="simPrice" value="980" min="100"></div>
+      <div class="form-group"><label>月間PV数</label><input type="number" id="simPV" value="5000" min="0"></div>
+      <div class="form-group"><label>購入率（%）</label><input type="number" id="simCVR" value="2" min="0" max="100" step="0.1"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>有料記事数（月）</label><input type="number" id="simArticles" value="4" min="1"></div>
+      <div class="form-group"><label>noteの手数料率（%）</label><input type="number" id="simFee" value="15" min="0" max="50"></div>
+      <div class="form-group"><label>目標月収（円）</label><input type="number" id="simGoal" value="50000" min="0"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="simulateRevenue()">シミュレーション実行</button>
+      <button class="btn btn-secondary" onclick="reverseSimulate()">目標から逆算</button>
+    </div>
+    <div id="simResult"></div>
+  </div>
+
+  <!-- Magazine Design -->
+  <div class="card">
+    <div class="card-title">マガジン設計</div>
+    <div class="card-desc">記事をセットにして販売するマガジンを設計しましょう。単品合計より割安にすると購入されやすくなります</div>
+    <div class="form-row">
+      <div class="form-group"><label>マガジン名</label><input type="text" id="magName" placeholder="例: 副業完全攻略マガジン"></div>
+      <div class="form-group"><label>マガジン価格（円）</label><input type="number" id="magPrice" value="2980"></div>
+      <div class="form-group"><label>記事数</label><input type="number" id="magCount" value="5" min="2" max="20"></div>
+    </div>
+    <button class="btn btn-primary mb-12" onclick="renderMagazine()">マガジン構成を生成</button>
+    <div id="magSlots"></div>
+    <div id="magSummary" class="mt-12"></div>
+  </div>
+
+  <!-- Paywall Design -->
+  <div class="card">
+    <div class="card-title">有料ライン設計</div>
+    <div class="card-desc">記事のどこから有料にするか。無料部分が多すぎると購入理由がなくなり、少なすぎると価値が伝わりません</div>
+    <div class="form-group">
+      <label>無料で見せる割合: <span id="paywallPct">40</span>%</label>
+      <input type="range" id="paywallSlider" min="10" max="80" value="40" oninput="updatePaywall()">
+    </div>
+    <div class="paywall-visual">
+      <div class="paywall-labels"><span>無料パート</span><span>有料パート</span></div>
+      <div class="paywall-bar">
+        <div class="paywall-free" id="paywallFree" style="width:40%"></div>
+        <div class="paywall-paid" id="paywallPaid" style="width:60%"></div>
+      </div>
+      <div id="paywallAdvice" class="text-sm mt-8"></div>
+    </div>
+    <div class="mt-16">
+      <strong class="text-sm">無料パートに入れるべき内容:</strong>
+      <ul class="mt-8" style="font-size:13px;padding-left:20px;line-height:2">
+        <li>読者の悩みへの共感（「こんな経験ありませんか？」）</li>
+        <li>問題の原因分析（なぜうまくいかないのか）</li>
+        <li>解決策の方向性（全体像だけ見せる）</li>
+        <li>あなたの実績・信頼性の根拠</li>
+      </ul>
+      <strong class="text-sm mt-16" style="display:block;margin-top:16px">有料パートに入れるべき内容:</strong>
+      <ul class="mt-8" style="font-size:13px;padding-left:20px;line-height:2">
+        <li>具体的な手順（Step by Step）</li>
+        <li>テンプレート・チェックリスト</li>
+        <li>実際の数字・データ</li>
+        <li>応用テクニック・裏技</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Tab 8: プロフィール ===== -->
+<div id="tab-profile" class="tab-content">
+  <div class="guide-box"><strong>使い方:</strong> noteのプロフィールは信頼と興味を持ってもらう最初の接点です。テンプレートに沿って入力するとプロフィール文を自動生成します。</div>
+  <div class="card">
+    <div class="card-title">プロフィール文ジェネレーター</div>
+    <div class="form-row">
+      <div class="form-group"><label>表示名</label><input type="text" id="profName" placeholder="例: 田中 太郎｜副業ブロガー"></div>
+      <div class="form-group"><label>肩書き / 一言</label><input type="text" id="profTitle" placeholder="例: 月収30万円の副業術を発信"></div>
+    </div>
+    <div class="form-group"><label>実績・経歴（箇条書きOK）</label><textarea id="profAchievement" rows="3" placeholder="例:&#10;・副業開始1年で月収30万円達成&#10;・note有料記事 累計1,000部突破&#10;・元IT企業営業マン"></textarea></div>
+    <div class="form-group"><label>誰に向けて発信しているか</label><input type="text" id="profTarget" placeholder="例: 副業を始めたい20〜30代の会社員"></div>
+    <div class="form-group"><label>どんな価値を提供するか</label><input type="text" id="profValue" placeholder="例: 再現性のある副業ノウハウを体験談ベースでお届け"></div>
+    <div class="form-group"><label>CTA（行動喚起）</label><select id="profCTA">
+      <option>フォローして最新情報をチェック</option>
+      <option>まずは無料記事から読んでみてください</option>
+      <option>公式LINE / メルマガで限定情報配信中</option>
+      <option>お仕事のご依頼はDMまで</option>
+    </select></div>
+    <div class="form-group"><label>テンプレートスタイル</label>
+      <div class="chip-group" id="profStyleChips"></div>
+    </div>
+    <button class="btn btn-primary mt-8" onclick="generateProfile()">プロフィール生成</button>
+  </div>
+  <div class="card" id="profileResult" style="display:none">
+    <div class="flex-between mb-12">
+      <div class="card-title">プレビュー</div>
+      <button class="btn btn-secondary btn-sm" onclick="copyProfile()">コピー</button>
+    </div>
+    <div class="profile-preview">
+      <div class="profile-avatar" style="font-size:16px;font-weight:700;color:var(--primary)">ICON</div>
+      <div class="profile-name-preview" id="profNamePreview"></div>
+      <div class="profile-bio" id="profBioPreview"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Tab 9: KPI管理 ===== -->
+<div id="tab-kpi" class="tab-content">
+  <div class="guide-box"><strong>使い方:</strong> フォロワー数・スキ数・売上を定期的に記録して成長を可視化しましょう。週1回の記録がおすすめです。</div>
+  <div class="card">
+    <div class="card-title">KPIを記録</div>
+    <div class="form-row">
+      <div class="form-group"><label>日付</label><input type="date" id="kpiDate"></div>
+      <div class="form-group"><label>フォロワー数</label><input type="number" id="kpiFollowers" min="0" placeholder="0"></div>
+      <div class="form-group"><label>月間ビュー数</label><input type="number" id="kpiViews" min="0" placeholder="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>スキ数（累計）</label><input type="number" id="kpiLikes" min="0" placeholder="0"></div>
+      <div class="form-group"><label>売上（円）</label><input type="number" id="kpiRevenue" min="0" placeholder="0"></div>
+      <div class="form-group"><label>記事数（累計）</label><input type="number" id="kpiArticles" min="0" placeholder="0"></div>
+    </div>
+    <div class="form-group"><label>メモ</label><input type="text" id="kpiMemo" placeholder="例: 〇〇の記事がバズった"></div>
+    <button class="btn btn-primary" onclick="addKPI()">記録する</button>
+  </div>
+
+  <div class="card" id="kpiDashboard">
+    <div class="card-title mb-12">ダッシュボード</div>
+    <div class="kpi-grid" id="kpiStats"></div>
+    <div class="card-title mt-24 mb-12">フォロワー推移</div>
+    <div class="chart-container"><div class="chart-bar-group" id="kpiChart"></div></div>
+    <div style="height:24px"></div>
+  </div>
+
+  <div class="card">
+    <div class="flex-between mb-12">
+      <div class="card-title">記録履歴</div>
+      <button class="btn btn-secondary btn-sm" onclick="clearKPI()">全削除</button>
+    </div>
+    <div class="table-wrap">
+      <table><thead><tr><th>日付</th><th>フォロワー</th><th>ビュー</th><th>スキ</th><th>売上</th><th>記事数</th><th>メモ</th><th></th></tr></thead>
+      <tbody id="kpiTableBody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- Competitor Modal -->
+<div class="modal-overlay" id="competitorModal">
+  <div class="modal">
+    <h3 id="competitorModalTitle">競合アカウントを追加</h3>
+    <input type="hidden" id="editCompetitorIdx" value="-1">
+    <div class="form-group"><label>アカウント名 *</label><input type="text" id="compName" placeholder="noteクリエイター名"></div>
+    <div class="form-group"><label>URL</label><input type="text" id="compUrl" placeholder="https://note.com/xxxxx"></div>
+    <div class="form-row">
+      <div class="form-group"><label>フォロワー数</label><input type="number" id="compFollowers" placeholder="1500"></div>
+      <div class="form-group"><label>記事数</label><input type="number" id="compArticles" placeholder="50"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>価格帯</label><input type="text" id="compPrice" placeholder="500〜1,500円"></div>
+      <div class="form-group"><label>投稿頻度</label><select id="compFrequency"><option value="">選択</option><option>毎日</option><option>週3〜5回</option><option>週1〜2回</option><option>月2〜3回</option><option>月1回以下</option></select></div>
+    </div>
+    <div class="form-group"><label>人気記事のテーマ</label><textarea id="compPopular" rows="2" placeholder="スキ数が多い記事のテーマ"></textarea></div>
+    <div class="form-group"><label>強み</label><textarea id="compStrength" rows="2" placeholder="良いところ"></textarea></div>
+    <div class="form-group"><label>弱み</label><textarea id="compWeakness" rows="2" placeholder="自分ならもっとこうできるポイント"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+      <button class="btn btn-secondary" onclick="closeCompetitorModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveCompetitor()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========================================
+// Data Store
+// ========================================
+const SK = 'noteResearchTool';
+function loadData() { try { return JSON.parse(localStorage.getItem(SK)) || defData(); } catch { return defData(); } }
+function saveData(d) { localStorage.setItem(SK, JSON.stringify(d)); }
+function defData() { return { competitors:[], personas:[], checklist:{}, kpiRecords:[], magazine:null }; }
+let D = loadData();
+
+// ========================================
+// Tabs
+// ========================================
+document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  document.getElementById('tab-' + b.dataset.tab).classList.add('active');
+}));
+
+function showToast(m) { const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2500); }
+
+// ========================================
+// Genre Data
+// ========================================
+const genres = [
+  { name:'副業・お金', market:5, competition:5, profit:5, badge:'hot', tags:['ビジネス','お金','副業'], desc:'王道ジャンル。ニッチ切りで勝機あり' },
+  { name:'自己啓発・マインドセット', market:5, competition:4, profit:4, badge:'hot', tags:['成長','メンタル','習慣'], desc:'体験談ベースで差別化しやすい' },
+  { name:'プログラミング・IT', market:4, competition:3, profit:5, badge:'blue', tags:['技術','プログラミング','IT'], desc:'技術記事は高単価でも売れる' },
+  { name:'恋愛・婚活', market:5, competition:4, profit:4, badge:'hot', tags:['恋愛','婚活','人間関係'], desc:'感情に訴えやすく購入率高い' },
+  { name:'ダイエット・健康', market:4, competition:4, profit:4, tags:['健康','ダイエット','美容'], desc:'実体験+ビフォーアフターが最強' },
+  { name:'転職・キャリア', market:4, competition:3, profit:5, badge:'blue', tags:['仕事','転職','キャリア'], desc:'人生の転機で高単価が通る' },
+  { name:'子育て・教育', market:4, competition:2, profit:3, badge:'blue', tags:['子育て','教育','育児'], desc:'共感で拡散。ママパパ層は購買力あり' },
+  { name:'ライティング・文章術', market:3, competition:3, profit:4, tags:['ライティング','文章','スキル'], desc:'noteユーザーとの親和性高い' },
+  { name:'デザイン・クリエイティブ', market:3, competition:2, profit:4, badge:'blue', tags:['デザイン','クリエイティブ','UI'], desc:'ポートフォリオとしても有効' },
+  { name:'マーケティング・SNS運用', market:4, competition:4, profit:5, tags:['マーケ','SNS','集客'], desc:'数字で実績を示すと信頼UP' },
+  { name:'投資・資産運用', market:4, competition:3, profit:5, tags:['投資','株','資産'], desc:'初心者向けが特に人気' },
+  { name:'英語・語学', market:3, competition:2, profit:3, badge:'new', tags:['英語','語学','学習'], desc:'TOEIC等の資格系が特に強い' },
+  { name:'料理・レシピ', market:3, competition:2, profit:2, tags:['料理','レシピ','食'], desc:'無料でフォロワー集めやすい' },
+  { name:'旅行・暮らし', market:3, competition:2, profit:2, tags:['旅行','暮らし','ライフスタイル'], desc:'ニッチな地域情報が狙い目' },
+  { name:'メンタルヘルス', market:4, competition:2, profit:3, badge:'new', tags:['メンタル','心理','HSP'], desc:'HSP等のニッチが伸びている' },
+  { name:'AI・ChatGPT活用', market:5, competition:3, profit:5, badge:'hot', tags:['AI','ChatGPT','テクノロジー'], desc:'プロンプト集や活用法が人気' },
+  { name:'フリーランス・独立', market:3, competition:2, profit:4, badge:'blue', tags:['フリーランス','独立','起業'], desc:'収入公開系の高エンゲージメント' },
+  { name:'音楽・エンタメ', market:2, competition:1, profit:2, tags:['音楽','エンタメ','趣味'], desc:'熱心なファンがつきやすい' },
+  { name:'介護・福祉', market:2, competition:1, profit:3, badge:'new', tags:['介護','福祉','高齢者'], desc:'競合極少。実体験に価値がある' },
+  { name:'スポーツ・筋トレ', market:3, competition:2, profit:3, tags:['筋トレ','スポーツ','フィットネス'], desc:'ビフォーアフター+メニュー系鉄板' },
+];
+
+const skillOptions = ['ビジネス経験','プログラミング','ライティング','デザイン','マーケティング','SNS運用','投資経験','語学力','料理が得意','旅行好き','メンタルケア知識','子育て経験','転職経験','フリーランス経験','AI・テクノロジー','健康・フィットネス','恋愛・婚活経験','介護経験','音楽・芸術','教育経験'];
+const skillToGenre = {'ビジネス経験':['副業・お金','マーケティング・SNS運用','転職・キャリア'],'プログラミング':['プログラミング・IT','AI・ChatGPT活用'],'ライティング':['ライティング・文章術','自己啓発・マインドセット'],'デザイン':['デザイン・クリエイティブ'],'マーケティング':['マーケティング・SNS運用','副業・お金'],'SNS運用':['マーケティング・SNS運用'],'投資経験':['投資・資産運用','副業・お金'],'語学力':['英語・語学'],'料理が得意':['料理・レシピ'],'旅行好き':['旅行・暮らし'],'メンタルケア知識':['メンタルヘルス','自己啓発・マインドセット'],'子育て経験':['子育て・教育'],'転職経験':['転職・キャリア','フリーランス・独立'],'フリーランス経験':['フリーランス・独立','副業・お金'],'AI・テクノロジー':['AI・ChatGPT活用','プログラミング・IT'],'健康・フィットネス':['ダイエット・健康','スポーツ・筋トレ'],'恋愛・婚活経験':['恋愛・婚活'],'介護経験':['介護・福祉'],'音楽・芸術':['音楽・エンタメ','デザイン・クリエイティブ'],'教育経験':['子育て・教育','英語・語学']};
+let selectedSkills = [];
+
+function scoreDots(v,mx,type) { let h='<div class="score">';for(let i=0;i<mx;i++){let c=i<v?'filled':'';if(c&&type==='competition'&&v>=4)c+=' high';else if(c&&type==='competition'&&v===3)c+=' mid';h+=`<div class="score-dot ${c}"></div>`;}return h+'</div>'; }
+
+function renderGenres(list) {
+  document.getElementById('genreCount').textContent = list.length+'件';
+  const g = document.getElementById('genreGrid');
+  if(!list.length){g.innerHTML='<div class="empty-state"><p>条件に一致するジャンルがありません</p></div>';return;}
+  g.innerHTML = list.map(x => {
+    const rec = x.profit>=4&&x.competition<=2;
+    const badge = x.badge==='hot'?'<span class="genre-badge badge-hot">人気</span>':x.badge==='blue'?'<span class="genre-badge badge-blue">狙い目</span>':x.badge==='new'?'<span class="genre-badge badge-new">成長中</span>':'';
+    return `<div class="genre-card ${rec?'recommended':''}"><div class="genre-name">${x.name} ${badge} ${rec?'<span class="tag">おすすめ</span>':''}</div><div class="genre-scores"><div class="genre-score-row"><span>市場規模</span>${scoreDots(x.market,5,'market')}</div><div class="genre-score-row"><span>競合度</span>${scoreDots(x.competition,5,'competition')}</div><div class="genre-score-row"><span>収益性</span>${scoreDots(x.profit,5,'profit')}</div></div><div class="genre-desc">${x.desc}</div></div>`;
+  }).join('');
+}
+
+function filterGenres() {
+  const p=parseInt(document.getElementById('filterProfit').value)||0, c=parseInt(document.getElementById('filterCompetition').value)||99, k=document.getElementById('filterKeyword').value.toLowerCase();
+  renderGenres(genres.filter(g=>g.profit>=p&&g.competition<=c&&(k===''||g.name.toLowerCase().includes(k)||g.tags.some(t=>t.toLowerCase().includes(k)))));
+}
+function resetGenreFilter() { ['filterProfit','filterCompetition'].forEach(id=>document.getElementById(id).value=''); document.getElementById('filterKeyword').value=''; renderGenres(genres); }
+
+function renderSkillChips() {
+  document.getElementById('skillChips').innerHTML = skillOptions.map(s=>`<div class="chip ${selectedSkills.includes(s)?'selected':''}" onclick="toggleSkill('${s}')">${s}</div>`).join('');
+  renderSkillMatches();
+}
+function toggleSkill(s) { const i=selectedSkills.indexOf(s);if(i>=0)selectedSkills.splice(i,1);else selectedSkills.push(s);renderSkillChips(); }
+function renderSkillMatches() {
+  const c=document.getElementById('matchResults');
+  if(!selectedSkills.length){c.innerHTML='<p class="text-sm text-light text-center">スキルを選択するとマッチ結果が表示されます</p>';return;}
+  const mc={};selectedSkills.forEach(s=>(skillToGenre[s]||[]).forEach(g=>mc[g]=(mc[g]||0)+1));
+  const sorted=Object.entries(mc).sort((a,b)=>b[1]-a[1]);
+  c.innerHTML='<strong class="text-sm">マッチ結果:</strong>'+sorted.map(([n,cnt])=>{const g=genres.find(x=>x.name===n);const pct=Math.round(cnt/selectedSkills.length*100);return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)"><div style="width:50px;text-align:center"><span class="tag">${pct}%</span></div><div style="flex:1"><strong style="font-size:14px">${n}</strong>${g?`<div class="text-sm text-light">${g.desc}</div>`:''}</div></div>`;}).join('');
+}
+
+// ========================================
+// Competitors
+// ========================================
+const checklistItems=['プロフィールの書き方を確認','フォロワー数と記事数のバランス','スキ数TOP3記事のテーマ','有料記事の価格帯と本数','無料/有料の比率','タイトルパターン分析','投稿頻度を確認','マガジンの構成確認','コメント欄のやり取り','文字数・ボリューム感','画像やフォーマット','有料ラインの位置'];
+function renderChecklist() { document.getElementById('competitorChecklist').innerHTML=checklistItems.map((it,i)=>`<li><div class="check-icon ${D.checklist[i]?'checked':''}" onclick="toggleCheck(${i})">${D.checklist[i]?'&#10003;':''}</div><span>${it}</span></li>`).join(''); }
+function toggleCheck(i) { D.checklist[i]=!D.checklist[i];saveData(D);renderChecklist(); }
+
+function openCompetitorModal(idx) {
+  const m=document.getElementById('competitorModal');document.getElementById('editCompetitorIdx').value=idx!==undefined?idx:-1;
+  document.getElementById('competitorModalTitle').textContent=idx!==undefined?'編集':'追加';
+  if(idx!==undefined){const c=D.competitors[idx];['compName','compUrl','compPrice','compPopular','compStrength','compWeakness'].forEach(id=>document.getElementById(id).value=c[id.replace('comp','').toLowerCase()]||'');document.getElementById('compName').value=c.name||'';document.getElementById('compUrl').value=c.url||'';document.getElementById('compFollowers').value=c.followers||'';document.getElementById('compArticles').value=c.articles||'';document.getElementById('compPrice').value=c.price||'';document.getElementById('compFrequency').value=c.frequency||'';document.getElementById('compPopular').value=c.popular||'';document.getElementById('compStrength').value=c.strength||'';document.getElementById('compWeakness').value=c.weakness||'';}
+  else{['compName','compUrl','compFollowers','compArticles','compPrice','compPopular','compStrength','compWeakness'].forEach(id=>document.getElementById(id).value='');document.getElementById('compFrequency').value='';}
+  m.classList.add('active');
+}
+function closeCompetitorModal(){document.getElementById('competitorModal').classList.remove('active');}
+function saveCompetitor() {
+  const name=document.getElementById('compName').value.trim();if(!name){showToast('名前を入力');return;}
+  const c={name,url:document.getElementById('compUrl').value.trim(),followers:document.getElementById('compFollowers').value,articles:document.getElementById('compArticles').value,price:document.getElementById('compPrice').value.trim(),frequency:document.getElementById('compFrequency').value,popular:document.getElementById('compPopular').value.trim(),strength:document.getElementById('compStrength').value.trim(),weakness:document.getElementById('compWeakness').value.trim()};
+  const idx=parseInt(document.getElementById('editCompetitorIdx').value);if(idx>=0)D.competitors[idx]=c;else D.competitors.push(c);
+  saveData(D);closeCompetitorModal();renderCompetitors();showToast('保存しました');
+}
+function deleteCompetitor(i){if(!confirm('削除しますか？'))return;D.competitors.splice(i,1);saveData(D);renderCompetitors();}
+function renderCompetitors() {
+  const l=document.getElementById('competitorList'),cmp=document.getElementById('competitorCompare'),tb=document.getElementById('competitorTableBody');
+  if(!D.competitors.length){l.innerHTML='<div class="empty-state"><p>「+ 追加」から始めましょう</p></div>';cmp.style.display='none';return;}
+  l.innerHTML=D.competitors.map((c,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)"><div><strong>${c.name}</strong><span class="text-sm text-light" style="margin-left:8px">${c.followers?c.followers+' フォロワー':''}</span></div><div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="openCompetitorModal(${i})">編集</button><button class="btn btn-danger btn-sm" onclick="deleteCompetitor(${i})">削除</button></div></div>`).join('');
+  if(D.competitors.length>=2){cmp.style.display='block';tb.innerHTML=D.competitors.map(c=>`<tr><td><strong>${c.name}</strong></td><td>${c.followers||'-'}</td><td>${c.articles||'-'}</td><td>${c.price||'-'}</td><td>${c.frequency||'-'}</td><td>${c.strength||'-'}</td></tr>`).join('');}else cmp.style.display='none';
+}
+
+// ========================================
+// Persona
+// ========================================
+let wizardStep=0;const wizardTotal=4;
+const painTemplates=['収入が低い・お金の不安','仕事にやりがいがない','人間関係の悩み','スキルアップ方法がわからない','将来が漠然と不安','時間がない・忙しい','自分に自信がない','健康の不安','パートナーが見つからない','副業のやり方がわからない'];
+const snsOptions=['X (Twitter)','Instagram','YouTube','TikTok','Facebook','LINE','note','Voicy'];
+const infoOptions=['Google検索','SNSタイムライン','YouTube','オンラインサロン','書籍','口コミ','Podcast','メルマガ'];
+const buyTriggers=['具体的なノウハウ','実績のある人','レビューが良い','価格が手頃','無料部分が良かった','限定感・希少性'];
+const hurdleOptions=['値段に見合うか不安','無料で十分かも','本当に役立つか不明','ネット決済に抵抗','似た情報で失敗済','知人にバレたくない'];
+let selectedPains=[],selectedSns=[],selectedInfo=[],selectedBuy=[],selectedHurdle=[];
+
+function renderChips(id,opts,sel,fn){document.getElementById(id).innerHTML=opts.map(o=>`<div class="chip ${sel.includes(o)?'selected':''}" onclick="${fn}('${o.replace(/'/g,"\\'")}')">${o}</div>`).join('');}
+function togArr(a,v){const i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);}
+function togglePain(v){togArr(selectedPains,v);renderChips('painChips',painTemplates,selectedPains,'togglePain');}
+function toggleSns(v){togArr(selectedSns,v);renderChips('snsChips',snsOptions,selectedSns,'toggleSns');}
+function toggleInfo(v){togArr(selectedInfo,v);renderChips('infoChips',infoOptions,selectedInfo,'toggleInfo');}
+function toggleBuy(v){togArr(selectedBuy,v);renderChips('buyChips',buyTriggers,selectedBuy,'toggleBuy');}
+function toggleHurdle(v){togArr(selectedHurdle,v);renderChips('hurdleChips',hurdleOptions,selectedHurdle,'toggleHurdle');}
+
+function updateWizardUI() {
+  document.querySelectorAll('.wizard-step').forEach((s,i)=>{s.classList.remove('active','done');if(i===wizardStep)s.classList.add('active');else if(i<wizardStep)s.classList.add('done');});
+  document.querySelectorAll('.wizard-content').forEach((c,i)=>c.classList.toggle('active',i===wizardStep));
+  document.getElementById('wizPrev').style.visibility=wizardStep===0?'hidden':'visible';
+  document.getElementById('wizNext').textContent=wizardStep===wizardTotal-1?'ペルソナを保存':'次へ →';
+}
+function wizardNext(){if(wizardStep<wizardTotal-1){wizardStep++;updateWizardUI();}else savePersona();}
+function wizardPrev(){if(wizardStep>0){wizardStep--;updateWizardUI();}}
+function resetPersonaWizard(){wizardStep=0;updateWizardUI();['personaName','personaJob','personaPain','personaGoal','personaTried','personaMemo'].forEach(id=>document.getElementById(id).value='');['personaAge','personaGender','personaIncome','personaNoteUsage','personaBudget'].forEach(id=>document.getElementById(id).value='');selectedPains=[];selectedSns=[];selectedInfo=[];selectedBuy=[];selectedHurdle=[];renderPersonaChips();}
+function renderPersonaChips(){renderChips('painChips',painTemplates,selectedPains,'togglePain');renderChips('snsChips',snsOptions,selectedSns,'toggleSns');renderChips('infoChips',infoOptions,selectedInfo,'toggleInfo');renderChips('buyChips',buyTriggers,selectedBuy,'toggleBuy');renderChips('hurdleChips',hurdleOptions,selectedHurdle,'toggleHurdle');}
+
+function savePersona(){
+  const name=document.getElementById('personaName').value.trim();if(!name){showToast('ペルソナ名を入力');return;}
+  D.personas.push({name,age:document.getElementById('personaAge').value,gender:document.getElementById('personaGender').value,job:document.getElementById('personaJob').value.trim(),income:document.getElementById('personaIncome').value,pain:document.getElementById('personaPain').value.trim(),goal:document.getElementById('personaGoal').value.trim(),tried:document.getElementById('personaTried').value.trim(),sns:[...selectedSns],infoSource:[...selectedInfo],noteUsage:document.getElementById('personaNoteUsage').value,budget:document.getElementById('personaBudget').value,buyTrigger:[...selectedBuy],hurdle:[...selectedHurdle],memo:document.getElementById('personaMemo').value.trim(),createdAt:new Date().toISOString()});
+  saveData(D);renderPersonas();resetPersonaWizard();showToast('保存しました');
+}
+function deletePersona(i){if(!confirm('削除しますか？'))return;D.personas.splice(i,1);saveData(D);renderPersonas();}
+function renderPersonas(){
+  const l=document.getElementById('personaList');
+  if(!D.personas.length){l.innerHTML='<div class="empty-state"><p>ウィザードからペルソナを作成しましょう</p></div>';return;}
+  l.innerHTML=D.personas.map((p,i)=>`<div class="persona-card"><div class="persona-header"><div class="persona-name">${p.name}</div><button class="btn btn-danger btn-sm" onclick="deletePersona(${i})">削除</button></div><div class="persona-grid"><div class="persona-item"><label>年齢</label><p>${p.age||'-'}</p></div><div class="persona-item"><label>性別</label><p>${p.gender||'-'}</p></div><div class="persona-item"><label>職業</label><p>${p.job||'-'}</p></div><div class="persona-item"><label>年収</label><p>${p.income||'-'}</p></div><div class="persona-item"><label>予算</label><p>${p.budget||'-'}</p></div><div class="persona-item"><label>note利用</label><p>${p.noteUsage||'-'}</p></div></div>${p.pain?`<div class="mt-12"><label>悩み</label><p class="text-sm">${p.pain.replace(/\n/g,'<br>')}</p></div>`:''}${p.goal?`<div class="mt-12"><label>理想の未来</label><p class="text-sm">${p.goal}</p></div>`:''}${p.buyTrigger&&p.buyTrigger.length?`<div class="mt-12"><label>購入の決め手</label><p class="text-sm">${p.buyTrigger.join(', ')}</p></div>`:''}${p.hurdle&&p.hurdle.length?`<div class="mt-12"><label>ハードル</label><p class="text-sm">${p.hurdle.join(', ')}</p></div>`:''}</div>`).join('');
+}
+
+// ========================================
+// Templates
+// ========================================
+const templates=[
+  {type:'無料記事',name:'集客用・フック記事',desc:'フォローや有料購入へ繋げる',flow:['フック','共感','価値提供','CTA'],sections:[{title:'フック（冒頭100字）',text:'読者の悩みや「あるある」を提示'},{title:'共感パート',text:'自分も同じ悩みを持っていた体験'},{title:'価値提供',text:'ノウハウの一部を惜しみなく出す'},{title:'CTA',text:'フォロー誘導、有料記事の案内'}],pricing:[{range:'無料',label:'1,500〜3,000字'}]},
+  {type:'有料記事',name:'収益記事・ノウハウ型',desc:'具体的ノウハウで課題解決',flow:['問題提起','原因分析','解決概要','有料ライン','具体手順','テンプレ','まとめ'],sections:[{title:'問題提起（無料）',text:'読者の問題を明確に'},{title:'原因分析（無料）',text:'原因を2〜3個挙げる'},{title:'解決概要（無料）',text:'方向性だけ示して有料へ誘導'},{title:'具体手順（有料）',text:'Step by Stepで再現可能に'},{title:'テンプレ（有料）',text:'コピペで使える付加価値'}],pricing:[{range:'500〜980円',label:'3,000〜5,000字'},{range:'1,480〜2,980円',label:'5,000〜15,000字'}]},
+  {type:'まとめ記事',name:'ランキング・比較型',desc:'複数選択肢を整理して比較',flow:['導入','比較基準','ランキング','選び方','まとめ'],sections:[{title:'導入',text:'「選ぶのに迷っていませんか？」'},{title:'比較基準',text:'価格・使いやすさ・効果など'},{title:'ランキング本編',text:'統一フォーマットで公平に'},{title:'選び方ガイド',text:'ペルソナ別おすすめ'}],pricing:[{range:'無料〜300円',label:'2,000〜5,000字'}]},
+  {type:'体験談記事',name:'ストーリーテリング型',desc:'体験をストーリーで語る',flow:['ビフォー','転機','プロセス','アフター','メッセージ'],sections:[{title:'ビフォー',text:'過去のダメだった自分を正直に'},{title:'転機',text:'変わるきっかけ'},{title:'プロセス',text:'失敗談も含めてリアルに'},{title:'アフター',text:'具体的成果を数字で'},{title:'メッセージ',text:'「あなたにもできます」'}],pricing:[{range:'無料〜500円',label:'2,000〜4,000字'},{range:'980〜1,480円',label:'4,000〜8,000字'}]},
+];
+
+function renderTemplates(){
+  document.getElementById('templateGrid').innerHTML=templates.map((t,i)=>`<div class="template-card" onclick="selectTemplate(${i})"><div class="template-type">${t.type}</div><div class="template-name">${t.name}</div><div class="text-sm text-light">${t.desc}</div><div class="template-flow">${t.flow.map((f,j)=>`${j?'<span class="flow-arrow">→</span>':''}<span class="flow-step">${f}</span>`).join('')}</div></div>`).join('');
+}
+function selectTemplate(i){
+  const t=templates[i],d=document.getElementById('templateDetail');d.style.display='block';
+  document.getElementById('templateDetailTitle').textContent=t.type+'：'+t.name;
+  document.getElementById('templateDetailDesc').textContent=t.desc;
+  document.getElementById('templateFlow').innerHTML=t.flow.map((f,j)=>`${j?'<span class="flow-arrow">→</span>':''}<span class="flow-step">${f}</span>`).join('');
+  document.getElementById('templateSections').innerHTML=t.sections.map(s=>`<div style="margin-bottom:14px"><strong style="font-size:14px">${s.title}</strong><p class="text-sm text-light" style="margin-top:4px">${s.text}</p></div>`).join('');
+  document.getElementById('templatePricing').innerHTML=t.pricing.map(p=>`<div class="pricing-item"><div class="pricing-range">${p.range}</div><div class="pricing-label">${p.label}</div></div>`).join('');
+  d.scrollIntoView({behavior:'smooth'});
+}
+
+const titlePatterns=[
+  (k,t)=>`【完全版】${t}のための${k}入門ガイド`,(k,t)=>`${k}で月5万円稼ぐまでにやった全手順`,
+  (k,t)=>`${t}が知らないと損する${k}の真実`,(k,t)=>`たった3ヶ月で${k}をマスターした方法`,
+  (k,t)=>`【${k}】${t}が最初にやるべき3つのこと`,(k,t)=>`なぜ${t}の${k}は失敗するのか？`,
+  (k,t)=>`${k}歴5年の私が教える最短ルート`,(k,t)=>`【保存版】${k}ロードマップ｜${t}向け`,
+  (k,t)=>`${k}を始めて人生が変わった話`,(k,t)=>`${t}必見！${k}で結果を出す人の共通点5つ`,
+  (k,t)=>`知識ゼロから始める${t}のための${k}`,(k,t)=>`もう迷わない！${k}の選び方完全ガイド`,
+  (k,t)=>`${k}で挫折した${t}へ｜再挑戦のコツ`,(k,t)=>`【実体験】${k}を1年続けた結果`,
+  (k,t)=>`${t}のための${k}｜よくある質問20選`,
+];
+function generateTitles(){
+  const k=document.getElementById('titleKeyword').value.trim(),t=document.getElementById('titleTarget').value.trim()||'初心者';
+  if(!k){showToast('キーワードを入力');return;}
+  const s=[...titlePatterns].sort(()=>Math.random()-0.5).slice(0,8);
+  document.getElementById('titleResults').innerHTML=s.map(fn=>{const title=fn(k,t);return `<div class="title-item"><span>${title}</span><button class="btn btn-secondary btn-sm" onclick="copyText(this,'${title.replace(/'/g,"\\'")}')">コピー</button></div>`;}).join('');
+}
+function copyText(btn,t){navigator.clipboard.writeText(t).then(()=>{btn.textContent='OK!';setTimeout(()=>btn.textContent='コピー',1500);});}
+
+// ========================================
+// Revenue Strategy
+// ========================================
+function simulateRevenue(){
+  const price=Number(document.getElementById('simPrice').value)||0;
+  const pv=Number(document.getElementById('simPV').value)||0;
+  const cvr=Number(document.getElementById('simCVR').value)||0;
+  const articles=Number(document.getElementById('simArticles').value)||1;
+  const fee=Number(document.getElementById('simFee').value)||15;
+  const purchases=Math.round(pv*(cvr/100));
+  const gross=purchases*price;
+  const net=Math.round(gross*(1-fee/100));
+  const monthly=net*articles;
+  document.getElementById('simResult').innerHTML=`<div class="sim-result"><div class="sim-label">月間推定収益</div><div class="sim-amount">${monthly.toLocaleString()}円</div><div class="sim-breakdown"><div class="sim-item"><div class="sim-item-value">${pv.toLocaleString()}</div><div class="sim-item-label">月間PV</div></div><div class="sim-item"><div class="sim-item-value">${purchases}</div><div class="sim-item-label">購入数/記事</div></div><div class="sim-item"><div class="sim-item-value">${price.toLocaleString()}円</div><div class="sim-item-label">単価</div></div><div class="sim-item"><div class="sim-item-value">${net.toLocaleString()}円</div><div class="sim-item-label">手取り/記事</div></div><div class="sim-item"><div class="sim-item-value">${articles}本</div><div class="sim-item-label">月間記事数</div></div><div class="sim-item"><div class="sim-item-value">${fee}%</div><div class="sim-item-label">手数料</div></div></div></div>`;
+}
+function reverseSimulate(){
+  const goal=Number(document.getElementById('simGoal').value)||50000;
+  const price=Number(document.getElementById('simPrice').value)||980;
+  const fee=Number(document.getElementById('simFee').value)||15;
+  const articles=Number(document.getElementById('simArticles').value)||4;
+  const netPerArticle=price*(1-fee/100);
+  const totalPurchases=Math.ceil(goal/netPerArticle);
+  const purchasesPerArticle=Math.ceil(totalPurchases/articles);
+  const cvr=Number(document.getElementById('simCVR').value)||2;
+  const neededPV=Math.ceil(purchasesPerArticle/(cvr/100));
+  document.getElementById('simResult').innerHTML=`<div class="sim-result"><div class="sim-label">目標 ${goal.toLocaleString()}円/月 を達成するには</div><div class="sim-amount">月間 ${(neededPV*articles).toLocaleString()} PV必要</div><div class="sim-breakdown"><div class="sim-item"><div class="sim-item-value">${totalPurchases}部</div><div class="sim-item-label">必要総購入数</div></div><div class="sim-item"><div class="sim-item-value">${purchasesPerArticle}部</div><div class="sim-item-label">1記事あたり</div></div><div class="sim-item"><div class="sim-item-value">${neededPV.toLocaleString()}</div><div class="sim-item-label">必要PV/記事</div></div><div class="sim-item"><div class="sim-item-value">${articles}本/月</div><div class="sim-item-label">記事数</div></div></div></div>`;
+}
+
+function renderMagazine(){
+  const count=parseInt(document.getElementById('magCount').value)||5;
+  const magPrice=parseInt(document.getElementById('magPrice').value)||2980;
+  const name=document.getElementById('magName').value.trim()||'マガジン';
+  const perArticle=Math.round(magPrice/count);
+  let html='';
+  for(let i=0;i<count;i++){
+    html+=`<div class="mag-slot"><div><strong>記事${i+1}</strong><input type="text" style="width:250px;margin-left:12px;padding:6px 10px;font-size:13px" placeholder="記事タイトルを入力" id="magArticle${i}"></div><div class="text-sm text-light">${perArticle}円相当</div></div>`;
+  }
+  document.getElementById('magSlots').innerHTML=html;
+  const singleTotal=Math.round(magPrice*1.5);
+  document.getElementById('magSummary').innerHTML=`<div style="background:var(--primary-light);padding:16px;border-radius:8px"><strong>${name}</strong><div class="text-sm mt-8">セット価格: <strong>${magPrice.toLocaleString()}円</strong>（1記事あたり${perArticle}円）</div><div class="text-sm">単品合計の目安: ${singleTotal.toLocaleString()}円 → マガジンなら <strong>${Math.round((1-magPrice/singleTotal)*100)}%OFF</strong></div></div>`;
+}
+
+function updatePaywall(){
+  const v=document.getElementById('paywallSlider').value;
+  document.getElementById('paywallPct').textContent=v;
+  document.getElementById('paywallFree').style.width=v+'%';
+  document.getElementById('paywallPaid').style.width=(100-v)+'%';
+  const el=document.getElementById('paywallAdvice');
+  if(v<25)el.innerHTML='<span style="color:var(--danger)">無料部分が少なすぎます。</span>読者が価値を判断できず、購入率が下がる可能性があります。';
+  else if(v<35)el.innerHTML='<span style="color:var(--warning)">やや少なめ。</span>信頼性を示す実績パートを無料に含めると効果的です。';
+  else if(v<=50)el.innerHTML='<span style="color:var(--primary)">バランスが良い範囲です。</span>問題提起〜解決策の概要まで無料で見せるのがベスト。';
+  else if(v<=65)el.innerHTML='<span style="color:var(--warning)">無料部分が多め。</span>有料部分の付加価値（テンプレ、データ等）を充実させましょう。';
+  else el.innerHTML='<span style="color:var(--danger)">無料が多すぎ。</span>購入理由が薄くなるリスクがあります。有料パートの独自性を強化してください。';
+}
+
+// ========================================
+// Tab 8: Profile Generator
+// ========================================
+const profStyles=['実績アピール型','共感・ストーリー型','専門家・権威型','カジュアル・親しみ型'];
+let selectedProfStyle='実績アピール型';
+function renderProfStyleChips(){
+  document.getElementById('profStyleChips').innerHTML=profStyles.map(s=>`<div class="chip ${selectedProfStyle===s?'selected':''}" onclick="selectedProfStyle='${s}';renderProfStyleChips()">${s}</div>`).join('');
+}
+function generateProfile(){
+  const name=document.getElementById('profName').value.trim()||'表示名';
+  const title=document.getElementById('profTitle').value.trim();
+  const achievement=document.getElementById('profAchievement').value.trim();
+  const target=document.getElementById('profTarget').value.trim();
+  const value=document.getElementById('profValue').value.trim();
+  const cta=document.getElementById('profCTA').value;
+  let bio='';
+  if(selectedProfStyle==='実績アピール型'){
+    if(title)bio+=title+'\n\n';
+    if(achievement)bio+=achievement+'\n\n';
+    if(target)bio+=`${target}に向けて発信しています。\n`;
+    if(value)bio+=value+'\n\n';
+    bio+=cta;
+  }else if(selectedProfStyle==='共感・ストーリー型'){
+    if(target)bio+=`かつての私も、${target}と同じ悩みを抱えていました。\n\n`;
+    if(achievement)bio+=`そこから試行錯誤して...\n${achievement}\n\n`;
+    if(value)bio+=`${value}\n同じ悩みを持つ方の力になれたら嬉しいです。\n\n`;
+    bio+=cta;
+  }else if(selectedProfStyle==='専門家・権威型'){
+    if(title)bio+=`【${title}】\n\n`;
+    if(achievement)bio+=`■ 経歴・実績\n${achievement}\n\n`;
+    if(value)bio+=`■ 発信内容\n${value}\n`;
+    if(target)bio+=`■ 対象: ${target}\n\n`;
+    bio+=cta;
+  }else{
+    bio+=`こんにちは！${name.split('｜')[0].split('|')[0]}です。\n\n`;
+    if(title)bio+=title+'\n\n';
+    if(value)bio+=value+'\n';
+    if(target)bio+=`${target}に役立つ情報をゆるっと発信中。\n\n`;
+    bio+=cta;
+  }
+  document.getElementById('profNamePreview').textContent=name;
+  document.getElementById('profBioPreview').textContent=bio;
+  document.getElementById('profileResult').style.display='block';
+  document.getElementById('profileResult').scrollIntoView({behavior:'smooth'});
+}
+function copyProfile(){
+  const bio=document.getElementById('profBioPreview').textContent;
+  navigator.clipboard.writeText(bio).then(()=>showToast('コピーしました'));
+}
+
+// ========================================
+// Tab 9: KPI Tracker
+// ========================================
+function addKPI(){
+  const date=document.getElementById('kpiDate').value;if(!date){showToast('日付を入力');return;}
+  if(!D.kpiRecords)D.kpiRecords=[];
+  D.kpiRecords.push({date,followers:Number(document.getElementById('kpiFollowers').value)||0,views:Number(document.getElementById('kpiViews').value)||0,likes:Number(document.getElementById('kpiLikes').value)||0,revenue:Number(document.getElementById('kpiRevenue').value)||0,articles:Number(document.getElementById('kpiArticles').value)||0,memo:document.getElementById('kpiMemo').value.trim()});
+  D.kpiRecords.sort((a,b)=>a.date.localeCompare(b.date));
+  saveData(D);renderKPI();showToast('記録しました');
+  ['kpiFollowers','kpiViews','kpiLikes','kpiRevenue','kpiArticles'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('kpiMemo').value='';
+}
+function deleteKPI(i){D.kpiRecords.splice(i,1);saveData(D);renderKPI();}
+function clearKPI(){if(!confirm('全記録を削除しますか？'))return;D.kpiRecords=[];saveData(D);renderKPI();}
+function renderKPI(){
+  if(!D.kpiRecords)D.kpiRecords=[];
+  const r=D.kpiRecords;
+  // Stats cards
+  const stats=document.getElementById('kpiStats');
+  if(r.length===0){stats.innerHTML='<p class="text-sm text-light">データを記録するとダッシュボードが表示されます</p>';document.getElementById('kpiChart').innerHTML='';document.getElementById('kpiTableBody').innerHTML='';return;}
+  const latest=r[r.length-1];const prev=r.length>=2?r[r.length-2]:null;
+  function change(cur,prv){if(!prv)return '';const d=cur-prv;return d>0?`<div class="kpi-change up">+${d.toLocaleString()}</div>`:d<0?`<div class="kpi-change down">${d.toLocaleString()}</div>`:'<div class="kpi-change">±0</div>';}
+  stats.innerHTML=[
+    {label:'フォロワー',val:latest.followers,prev:prev?.followers},{label:'月間ビュー',val:latest.views,prev:prev?.views},
+    {label:'スキ(累計)',val:latest.likes,prev:prev?.likes},{label:'売上',val:latest.revenue,prev:prev?.revenue,yen:true},
+    {label:'記事数',val:latest.articles,prev:prev?.articles}
+  ].map(x=>`<div class="kpi-card-stat"><div class="kpi-value">${x.yen?x.val.toLocaleString()+'円':x.val.toLocaleString()}</div><div class="kpi-label">${x.label}</div>${change(x.val,x.prev)}</div>`).join('');
+  // Chart
+  const chart=document.getElementById('kpiChart');
+  const maxF=Math.max(...r.map(x=>x.followers),1);
+  chart.innerHTML=r.slice(-12).map(x=>{const h=Math.max(4,Math.round(x.followers/maxF*180));return `<div class="chart-bar" style="height:${h}px"><div class="chart-bar-value">${x.followers}</div><div class="chart-bar-label">${x.date.slice(5)}</div></div>`;}).join('');
+  // Table
+  document.getElementById('kpiTableBody').innerHTML=r.slice().reverse().map((x,i)=>`<tr><td>${x.date}</td><td>${x.followers.toLocaleString()}</td><td>${x.views.toLocaleString()}</td><td>${x.likes.toLocaleString()}</td><td>${x.revenue.toLocaleString()}円</td><td>${x.articles}</td><td class="text-sm">${x.memo||''}</td><td><button class="btn btn-danger btn-sm" onclick="deleteKPI(${r.length-1-i})">削除</button></td></tr>`).join('');
+}
+
+// ========================================
+// Export / Import
+// ========================================
+function exportData(){
+  const blob=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`note-research-${new Date().toISOString().slice(0,10)}.json`;a.click();
+  showToast('エクスポートしました');
+}
+function importData(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){try{D={...defData(),...JSON.parse(ev.target.result)};saveData(D);renderAll();showToast('インポートしました');}catch{showToast('読み込み失敗');}};
+  reader.readAsText(file);e.target.value='';
+}
+
+// ========================================
+// Init
+// ========================================
+function renderAll(){
+  renderGenres(genres);renderSkillChips();renderChecklist();renderCompetitors();
+  renderPersonas();renderPersonaChips();renderTemplates();
+  updatePaywall();renderProfStyleChips();renderKPI();
+  document.getElementById('kpiDate').value=new Date().toISOString().slice(0,10);
+}
+renderAll();
+</script>
+</body>
+</html>
