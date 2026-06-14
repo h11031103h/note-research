@@ -239,6 +239,30 @@ tr:hover td { background: #fafbfc; }
 .sim-item-value { font-size: 20px; font-weight: 700; color: var(--text); }
 .sim-item-label { font-size: 11px; color: var(--text-light); }
 
+/* Research */
+.research-dashboard {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px; margin: 16px 0;
+}
+.research-stat {
+  background: white; border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px;
+}
+.research-stat-value { font-size: 24px; font-weight: 800; color: var(--primary-dark); }
+.research-stat-label { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+.research-insights {
+  background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;
+  padding: 16px; margin-top: 12px;
+}
+.research-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.research-item {
+  border: 1px solid var(--border); border-radius: 8px; padding: 14px;
+  display: grid; grid-template-columns: 1fr auto; gap: 12px; background: white;
+}
+.research-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.research-meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--text-light); }
+.research-actions { display: flex; align-items: center; gap: 6px; }
+
 /* Magazine */
 .mag-slot {
   border: 1px dashed var(--border); border-radius: 8px; padding: 14px;
@@ -451,6 +475,36 @@ input[type="range"]::-webkit-slider-thumb {
         <strong class="text-sm">リサーチメモ</strong>
         <div class="card-desc">気づいたことをメモしておきましょう（自動保存されます）</div>
         <textarea id="researchMemo" rows="4" placeholder="例: スキ数TOP3はすべて無料記事。有料記事は500〜1500円が多い。タイトルに数字が入っている記事が上位に多い..." oninput="saveResearchMemo()"></textarea>
+      </div>
+
+      <div class="mt-24">
+        <strong class="text-sm">見つけた記事を記録</strong>
+        <div class="card-desc">上位記事を5〜10本ほど記録すると、勝ちパターンが見えやすくなります</div>
+        <div class="form-row">
+          <div class="form-group" style="flex:2"><label>記事タイトル *</label><input type="text" id="researchTitle" placeholder="例: 副業初心者が最初の1万円を稼ぐまで"></div>
+          <div class="form-group"><label>著者</label><input type="text" id="researchAuthor" placeholder="クリエイター名"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>スキ数</label><input type="number" id="researchLikes" min="0" placeholder="120"></div>
+          <div class="form-group"><label>価格（円）</label><input type="number" id="researchPrice" min="0" placeholder="980"></div>
+          <div class="form-group"><label>記事タイプ</label><select id="researchType"><option>無料</option><option>有料</option><option>一部有料</option><option>不明</option></select></div>
+        </div>
+        <div class="form-group"><label>URL</label><input type="url" id="researchUrl" placeholder="https://note.com/..."></div>
+        <div class="form-row">
+          <div class="form-group"><label>タイトルの型</label><select id="researchPattern"><option>ノウハウ</option><option>体験談</option><option>まとめ・比較</option><option>ランキング</option><option>問題提起</option><option>数字・実績</option><option>その他</option></select></div>
+          <div class="form-group" style="flex:2"><label>刺さったポイント</label><input type="text" id="researchHook" placeholder="例: 冒頭の失敗談がリアル / 数字の見せ方が強い"></div>
+        </div>
+        <button class="btn btn-primary" onclick="addResearchItem()">記事を保存</button>
+      </div>
+
+      <div class="mt-24">
+        <div class="flex-between mb-12">
+          <strong class="text-sm">リサーチ結果</strong>
+          <button class="btn btn-secondary btn-sm" onclick="copyResearchSummary()">分析メモをコピー</button>
+        </div>
+        <div id="researchDashboard"></div>
+        <div id="researchInsights"></div>
+        <div class="research-list" id="researchList"></div>
       </div>
     </div>
   </div>
@@ -761,7 +815,7 @@ input[type="range"]::-webkit-slider-thumb {
 const SK = 'noteResearchTool';
 function loadData() { try { return JSON.parse(localStorage.getItem(SK)) || defData(); } catch { return defData(); } }
 function saveData(d) { localStorage.setItem(SK, JSON.stringify(d)); }
-function defData() { return { competitors:[], personas:[], checklist:{}, kpiRecords:[], magazine:null }; }
+function defData() { return { competitors:[], personas:[], checklist:{}, kpiRecords:[], magazine:null, researchMemos:{}, researchItems:[] }; }
 let D = loadData();
 
 // ========================================
@@ -775,6 +829,8 @@ document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', (
 }));
 
 function showToast(m) { const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2500); }
+function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function formatNum(n){return Number(n||0).toLocaleString();}
 
 // ========================================
 // Genre Data
@@ -862,6 +918,7 @@ function openNoteSearch() {
   // Load saved memo for this keyword
   const memos = D.researchMemos || {};
   document.getElementById('researchMemo').value = memos[keyword] || '';
+  renderResearch();
 }
 
 function saveResearchMemo() {
@@ -870,6 +927,152 @@ function saveResearchMemo() {
   if (!D.researchMemos) D.researchMemos = {};
   D.researchMemos[keyword] = document.getElementById('researchMemo').value;
   saveData(D);
+}
+
+function currentResearchKeyword() {
+  return document.getElementById('researchKw').textContent || document.getElementById('scrapeKeyword').value.trim();
+}
+
+function addResearchItem() {
+  const keyword = currentResearchKeyword();
+  const title = document.getElementById('researchTitle').value.trim();
+  if (!keyword) { showToast('先にキーワードを検索してください'); return; }
+  if (!title) { showToast('記事タイトルを入力してください'); return; }
+  if (!D.researchItems) D.researchItems = [];
+  D.researchItems.push({
+    keyword,
+    title,
+    author: document.getElementById('researchAuthor').value.trim(),
+    likes: Number(document.getElementById('researchLikes').value) || 0,
+    price: Number(document.getElementById('researchPrice').value) || 0,
+    type: document.getElementById('researchType').value,
+    url: document.getElementById('researchUrl').value.trim(),
+    pattern: document.getElementById('researchPattern').value,
+    hook: document.getElementById('researchHook').value.trim(),
+    createdAt: new Date().toISOString()
+  });
+  saveData(D);
+  ['researchTitle','researchAuthor','researchLikes','researchPrice','researchUrl','researchHook'].forEach(id=>document.getElementById(id).value='');
+  renderResearch();
+  showToast('記事を保存しました');
+}
+
+function deleteResearchItem(i) {
+  if (!confirm('このリサーチ記録を削除しますか？')) return;
+  D.researchItems.splice(i, 1);
+  saveData(D);
+  renderResearch();
+}
+
+function researchForKeyword() {
+  const keyword = currentResearchKeyword();
+  if (!D.researchItems) D.researchItems = [];
+  return D.researchItems.map((item, index)=>({...item, index})).filter(item=>item.keyword===keyword);
+}
+
+function countBy(items, key) {
+  return items.reduce((acc, item)=>{ const v=item[key]||'未分類'; acc[v]=(acc[v]||0)+1; return acc; }, {});
+}
+
+function topEntry(counts) {
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0] || ['-', 0];
+}
+
+function buildResearchSummary(items) {
+  const keyword = currentResearchKeyword();
+  if (!items.length) return `# ${keyword} リサーチ\nまだ記事記録がありません。`;
+  const avgLikes = Math.round(items.reduce((sum,item)=>sum+item.likes,0)/items.length);
+  const paidItems = items.filter(item=>item.type==='有料'||item.type==='一部有料');
+  const priced = paidItems.filter(item=>item.price>0);
+  const avgPrice = priced.length ? Math.round(priced.reduce((sum,item)=>sum+item.price,0)/priced.length) : 0;
+  const [topPattern] = topEntry(countBy(items, 'pattern'));
+  const topLiked = [...items].sort((a,b)=>b.likes-a.likes).slice(0,3);
+  return [
+    `# ${keyword} リサーチ`,
+    `調査本数: ${items.length}本`,
+    `平均スキ数: ${formatNum(avgLikes)}`,
+    `有料/一部有料比率: ${Math.round(paidItems.length/items.length*100)}%`,
+    avgPrice ? `有料記事の平均価格: ${formatNum(avgPrice)}円` : '有料記事の平均価格: 未入力',
+    `多いタイトル型: ${topPattern}`,
+    '',
+    '## 上位記事',
+    ...topLiked.map((item,i)=>`${i+1}. ${item.title} / ${formatNum(item.likes)}スキ / ${item.type}${item.price?` / ${formatNum(item.price)}円`:''}`),
+    '',
+    '## 刺さったポイント',
+    ...items.filter(item=>item.hook).slice(-5).map(item=>`- ${item.hook}`)
+  ].join('\n');
+}
+
+function copyResearchSummary() {
+  const items = researchForKeyword();
+  navigator.clipboard.writeText(buildResearchSummary(items)).then(()=>showToast('分析メモをコピーしました'));
+}
+
+function sendResearchToTitles(i) {
+  const item = (D.researchItems || [])[i];
+  if (!item) return;
+  document.getElementById('titleKeyword').value = item.keyword;
+  document.querySelector('[data-tab=template]').click();
+  showToast('タイトル生成にキーワードを送りました');
+}
+
+function renderResearch() {
+  const dashboard = document.getElementById('researchDashboard');
+  const insights = document.getElementById('researchInsights');
+  const list = document.getElementById('researchList');
+  if (!dashboard || !insights || !list) return;
+  const items = researchForKeyword();
+  if (!items.length) {
+    dashboard.innerHTML = '<div class="empty-state"><p>記事を保存すると、ここに分析が表示されます</p></div>';
+    insights.innerHTML = '';
+    list.innerHTML = '';
+    return;
+  }
+
+  const paidItems = items.filter(item=>item.type==='有料'||item.type==='一部有料');
+  const priced = paidItems.filter(item=>item.price>0);
+  const avgLikes = Math.round(items.reduce((sum,item)=>sum+item.likes,0)/items.length);
+  const maxLikes = Math.max(...items.map(item=>item.likes), 0);
+  const avgPrice = priced.length ? Math.round(priced.reduce((sum,item)=>sum+item.price,0)/priced.length) : 0;
+  const [topPattern, topPatternCount] = topEntry(countBy(items, 'pattern'));
+  const paidRatio = Math.round(paidItems.length/items.length*100);
+
+  dashboard.innerHTML = `<div class="research-dashboard">
+    <div class="research-stat"><div class="research-stat-value">${items.length}</div><div class="research-stat-label">調査本数</div></div>
+    <div class="research-stat"><div class="research-stat-value">${formatNum(avgLikes)}</div><div class="research-stat-label">平均スキ数</div></div>
+    <div class="research-stat"><div class="research-stat-value">${formatNum(maxLikes)}</div><div class="research-stat-label">最大スキ数</div></div>
+    <div class="research-stat"><div class="research-stat-value">${paidRatio}%</div><div class="research-stat-label">有料/一部有料比率</div></div>
+    <div class="research-stat"><div class="research-stat-value">${avgPrice?formatNum(avgPrice)+'円':'-'}</div><div class="research-stat-label">有料平均価格</div></div>
+    <div class="research-stat"><div class="research-stat-value">${escapeHtml(topPattern)}</div><div class="research-stat-label">最多タイトル型 ${topPatternCount}本</div></div>
+  </div>`;
+
+  const advice = [];
+  if (items.length < 5) advice.push('まずは5本以上を記録すると、偶然ではなく傾向として判断しやすくなります。');
+  if (avgLikes >= 100) advice.push('平均スキ数が高めです。需要は強いので、タイトルの切り口と有料ラインで差別化しましょう。');
+  else advice.push('平均スキ数は控えめです。検索キーワードを少し広げるか、近いジャンルも比較すると判断しやすくなります。');
+  if (paidRatio >= 50) advice.push('有料記事が多い市場です。無料部分で信頼を作り、具体手順やテンプレートを有料に置く構成が合いそうです。');
+  else advice.push('無料記事が多い市場です。まず無料記事で読者を集め、関連記事やマガジンへ誘導する設計が向いています。');
+  if (topPattern !== '-') advice.push(`タイトルは「${escapeHtml(topPattern)}」型が多めです。同じ型を使いつつ、対象読者や成果数字でズラすと企画化しやすいです。`);
+
+  insights.innerHTML = `<div class="research-insights"><strong class="text-sm">分析メモ</strong><ul style="font-size:13px;padding-left:18px;margin-top:8px;line-height:1.8;color:var(--text-light)">${advice.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+
+  list.innerHTML = items.slice().reverse().map(item=>`<div class="research-item">
+    <div>
+      <div class="research-title">${item.url?`<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener">${escapeHtml(item.title)}</a>`:escapeHtml(item.title)}</div>
+      <div class="research-meta">
+        <span>${escapeHtml(item.author)||'著者未入力'}</span>
+        <span>${formatNum(item.likes)}スキ</span>
+        <span>${escapeHtml(item.type)}</span>
+        <span>${item.price?formatNum(item.price)+'円':'価格未入力'}</span>
+        <span>${escapeHtml(item.pattern)}</span>
+      </div>
+      ${item.hook?`<div class="text-sm text-light mt-8">${escapeHtml(item.hook)}</div>`:''}
+    </div>
+    <div class="research-actions">
+      <button class="btn btn-secondary btn-sm" onclick="sendResearchToTitles(${item.index})">タイトル案へ</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteResearchItem(${item.index})">削除</button>
+    </div>
+  </div>`).join('');
 }
 
 // ========================================
@@ -1146,7 +1349,7 @@ function importData(e){
 function renderAll(){
   renderGenres(genres);renderSkillChips();renderChecklist();renderCompetitors();
   renderPersonas();renderPersonaChips();renderTemplates();
-  updatePaywall();renderProfStyleChips();renderKPI();
+  updatePaywall();renderProfStyleChips();renderResearch();renderKPI();
   document.getElementById('kpiDate').value=new Date().toISOString().slice(0,10);
 }
 renderAll();
