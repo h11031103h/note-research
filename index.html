@@ -428,7 +428,7 @@ input[type="range"]::-webkit-slider-thumb {
       </div>
       <div class="form-group">
         <label>リサーチ対象</label>
-        <select id="scrapePrice">
+        <select id="scrapePrice" onchange="syncResearchTypeWithTarget()">
           <option value="all">すべて</option>
           <option value="free">無料記事</option>
           <option value="paid">有料記事</option>
@@ -448,7 +448,7 @@ input[type="range"]::-webkit-slider-thumb {
     <div class="mt-16" id="researchGuide" style="display:none">
       <div style="background:var(--primary-light);border-radius:8px;padding:16px">
         <strong style="font-size:14px">「<span id="researchKw"></span>」のリサーチ中 ...</strong>
-        <p class="text-sm text-light mt-8">noteの検索結果が別タブで開いています。以下の視点でチェックしましょう</p>
+        <p class="text-sm text-light mt-8" id="researchTargetHint">noteの検索結果が別タブで開いています。以下の視点でチェックしましょう</p>
       </div>
 
       <div class="mt-16" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
@@ -944,18 +944,52 @@ function pickGenreKeyword(idx) {
   setResearchKeyword(idx, 0);
 }
 
+function searchTargetLabel(price) {
+  if (price === 'paid') return '有料記事';
+  if (price === 'free') return '無料記事';
+  return 'すべて';
+}
+
+function buildNoteSearchUrl(keyword, sortParam, price) {
+  const context = price === 'paid' ? 'note_for_sale' : 'note';
+  const query = price === 'free' ? `${keyword} 無料` : keyword;
+  const params = new URLSearchParams({ q: query, context, sort: sortParam });
+  return `https://note.com/search?${params.toString()}`;
+}
+
+function syncResearchTypeWithTarget(price = document.getElementById('scrapePrice')?.value) {
+  const type = document.getElementById('researchType');
+  if (!type) return;
+  if (price === 'paid') type.value = '有料';
+  else if (price === 'free') type.value = '無料';
+  else type.value = '不明';
+}
+
+function updateResearchTargetHint(price) {
+  const hint = document.getElementById('researchTargetHint');
+  if (!hint) return;
+  if (price === 'paid') {
+    hint.textContent = 'noteの有料記事検索を別タブで開いています。保存フォームの記事タイプも「有料」にセットしました。';
+  } else if (price === 'free') {
+    hint.textContent = 'noteで無料記事向けの検索を別タブで開いています。保存フォームの記事タイプも「無料」にセットしました。';
+  } else {
+    hint.textContent = 'noteの検索結果が別タブで開いています。保存フォームの記事タイプは「不明」にセットしました。';
+  }
+}
+
 function openNoteSearch() {
   const keyword = document.getElementById('scrapeKeyword').value.trim();
   if (!keyword) { showToast('キーワードを入力してください'); return; }
   const sort = document.getElementById('scrapeSort').value;
   const price = document.getElementById('scrapePrice').value;
   const sortParam = sort === 'like' ? 'like' : 'new';
-  const priceLabel = price === 'paid' ? '有料記事' : price === 'free' ? '無料記事' : 'すべて';
-  const query = price === 'paid' ? `${keyword} 有料` : price === 'free' ? `${keyword} 無料` : keyword;
+  const priceLabel = searchTargetLabel(price);
   const displayKeyword = price === 'all' ? keyword : `${keyword}（${priceLabel}）`;
-  const url = `https://note.com/search?q=${encodeURIComponent(query)}&context=note&sort=${sortParam}`;
+  const url = buildNoteSearchUrl(keyword, sortParam, price);
   window.open(url, '_blank');
 
+  syncResearchTypeWithTarget(price);
+  updateResearchTargetHint(price);
   document.getElementById('researchKw').textContent = displayKeyword;
   document.getElementById('researchGuide').style.display = 'block';
   document.getElementById('researchGuide').scrollIntoView({ behavior: 'smooth' });
