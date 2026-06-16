@@ -191,6 +191,12 @@ tr:hover td { background: #fafbfc; }
 }
 .chip:hover { border-color: var(--primary); }
 .chip.selected { background: var(--primary); color: white; border-color: var(--primary); }
+.keyword-options {
+  display: none; background: #f8fafc; border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px; margin: -6px 0 18px;
+}
+.keyword-options.active { display: block; }
+.keyword-option-title { font-size: 12px; font-weight: 700; color: var(--text-light); margin-bottom: 8px; }
 
 /* Pricing */
 .pricing-guide { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 12px; }
@@ -421,6 +427,14 @@ input[type="range"]::-webkit-slider-thumb {
         <input type="text" id="scrapeKeyword" placeholder="例: 副業、ダイエット、プログラミング">
       </div>
       <div class="form-group">
+        <label>リサーチ対象</label>
+        <select id="scrapePrice">
+          <option value="all">すべて</option>
+          <option value="free">無料記事</option>
+          <option value="paid">有料記事</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label>並び順</label>
         <select id="scrapeSort">
           <option value="like">スキ順（人気順）</option>
@@ -429,6 +443,7 @@ input[type="range"]::-webkit-slider-thumb {
       </div>
       <button class="btn btn-primary" onclick="openNoteSearch()">noteで検索</button>
     </div>
+    <div class="keyword-options" id="keywordOptions"></div>
 
     <div class="mt-16" id="researchGuide" style="display:none">
       <div style="background:var(--primary-light);border-radius:8px;padding:16px">
@@ -836,26 +851,32 @@ function formatNum(n){return Number(n||0).toLocaleString();}
 // Genre Data
 // ========================================
 const genres = [
-  { name:'副業・お金', market:5, competition:5, profit:5, badge:'hot', tags:['ビジネス','お金','副業'], desc:'王道ジャンル。ニッチ切りで勝機あり' },
-  { name:'自己啓発・マインドセット', market:5, competition:4, profit:4, badge:'hot', tags:['成長','メンタル','習慣'], desc:'体験談ベースで差別化しやすい' },
-  { name:'プログラミング・IT', market:4, competition:3, profit:5, badge:'blue', tags:['技術','プログラミング','IT'], desc:'技術記事は高単価でも売れる' },
-  { name:'恋愛・婚活', market:5, competition:4, profit:4, badge:'hot', tags:['恋愛','婚活','人間関係'], desc:'感情に訴えやすく購入率高い' },
-  { name:'ダイエット・健康', market:4, competition:4, profit:4, tags:['健康','ダイエット','美容'], desc:'実体験+ビフォーアフターが最強' },
-  { name:'転職・キャリア', market:4, competition:3, profit:5, badge:'blue', tags:['仕事','転職','キャリア'], desc:'人生の転機で高単価が通る' },
-  { name:'子育て・教育', market:4, competition:2, profit:3, badge:'blue', tags:['子育て','教育','育児'], desc:'共感で拡散。ママパパ層は購買力あり' },
-  { name:'ライティング・文章術', market:3, competition:3, profit:4, tags:['ライティング','文章','スキル'], desc:'noteユーザーとの親和性高い' },
-  { name:'デザイン・クリエイティブ', market:3, competition:2, profit:4, badge:'blue', tags:['デザイン','クリエイティブ','UI'], desc:'ポートフォリオとしても有効' },
-  { name:'マーケティング・SNS運用', market:4, competition:4, profit:5, tags:['マーケ','SNS','集客'], desc:'数字で実績を示すと信頼UP' },
-  { name:'投資・資産運用', market:4, competition:3, profit:5, tags:['投資','株','資産'], desc:'初心者向けが特に人気' },
-  { name:'英語・語学', market:3, competition:2, profit:3, badge:'new', tags:['英語','語学','学習'], desc:'TOEIC等の資格系が特に強い' },
-  { name:'料理・レシピ', market:3, competition:2, profit:2, tags:['料理','レシピ','食'], desc:'無料でフォロワー集めやすい' },
-  { name:'旅行・暮らし', market:3, competition:2, profit:2, tags:['旅行','暮らし','ライフスタイル'], desc:'ニッチな地域情報が狙い目' },
-  { name:'メンタルヘルス', market:4, competition:2, profit:3, badge:'new', tags:['メンタル','心理','HSP'], desc:'HSP等のニッチが伸びている' },
-  { name:'AI・ChatGPT活用', market:5, competition:3, profit:5, badge:'hot', tags:['AI','ChatGPT','テクノロジー'], desc:'プロンプト集や活用法が人気' },
-  { name:'フリーランス・独立', market:3, competition:2, profit:4, badge:'blue', tags:['フリーランス','独立','起業'], desc:'収入公開系の高エンゲージメント' },
-  { name:'音楽・エンタメ', market:2, competition:1, profit:2, tags:['音楽','エンタメ','趣味'], desc:'熱心なファンがつきやすい' },
-  { name:'介護・福祉', market:2, competition:1, profit:3, badge:'new', tags:['介護','福祉','高齢者'], desc:'競合極少。実体験に価値がある' },
-  { name:'スポーツ・筋トレ', market:3, competition:2, profit:3, tags:['筋トレ','スポーツ','フィットネス'], desc:'ビフォーアフター+メニュー系鉄板' },
+  { name:'副業・お金', market:5, competition:5, profit:5, badge:'hot', tags:['副業','お金','収益化'], keywords:['副業','在宅副業','副業 始め方'], desc:'王道ジャンル。ニッチ切りで勝機あり' },
+  { name:'在宅ワーク', market:4, competition:3, profit:4, badge:'blue', tags:['在宅ワーク','副業','働き方'], keywords:['在宅ワーク','在宅副業','主婦 在宅ワーク'], desc:'生活文脈と相性がよく具体化しやすい' },
+  { name:'個人ビジネス', market:4, competition:3, profit:5, tags:['個人ビジネス','起業','収益化'], keywords:['個人ビジネス','ひとり起業','コンテンツ販売'], desc:'有料noteとの相性が高い' },
+  { name:'自己啓発・マインドセット', market:5, competition:4, profit:4, badge:'hot', tags:['自己啓発','メンタル','習慣'], keywords:['自己啓発','習慣化','マインドセット'], desc:'体験談ベースで差別化しやすい' },
+  { name:'プログラミング・IT', market:4, competition:3, profit:5, badge:'blue', tags:['プログラミング','IT','技術'], keywords:['プログラミング','Web制作','エンジニア転職'], desc:'技術記事は高単価でも売れる' },
+  { name:'恋愛・婚活', market:5, competition:4, profit:4, badge:'hot', tags:['恋愛','婚活','人間関係'], keywords:['恋愛','婚活','マッチングアプリ'], desc:'感情に訴えやすく購入率高い' },
+  { name:'ダイエット・健康', market:4, competition:4, profit:4, tags:['ダイエット','健康','美容'], keywords:['ダイエット','食事管理','ボディメイク'], desc:'実体験+ビフォーアフターが最強' },
+  { name:'転職・キャリア', market:4, competition:3, profit:5, badge:'blue', tags:['転職','キャリア','仕事'], keywords:['転職','キャリア設計','職務経歴書'], desc:'人生の転機で高単価が通る' },
+  { name:'子育て・教育', market:4, competition:2, profit:3, badge:'blue', tags:['子育て','教育','育児'], keywords:['子育て','育児','知育'], desc:'共感で拡散。ママパパ層は購買力あり' },
+  { name:'子育て×働き方', market:3, competition:2, profit:3, badge:'blue', tags:['子育て','働き方','共働き'], keywords:['ワーママ','子育て 働き方','育休復帰'], desc:'悩みが具体的で記事企画に落としやすい' },
+  { name:'ライティング・文章術', market:3, competition:3, profit:4, tags:['ライティング','文章','スキル'], keywords:['ライティング','文章術','note 書き方'], desc:'noteユーザーとの親和性高い' },
+  { name:'デザイン・クリエイティブ', market:3, competition:2, profit:4, badge:'blue', tags:['デザイン','クリエイティブ','UI'], keywords:['デザイン','Canva','UIデザイン'], desc:'ポートフォリオとしても有効' },
+  { name:'マーケティング・SNS運用', market:4, competition:4, profit:5, tags:['マーケティング','SNS運用','集客'], keywords:['マーケティング','SNS運用','SNSマーケティング'], desc:'数字で実績を示すと信頼UP' },
+  { name:'Instagram運用', market:4, competition:3, profit:5, tags:['Instagram','SNS運用','集客'], keywords:['Instagram運用','インスタ集客','インスタ収益化'], desc:'媒体が絞れるので競合比較しやすい' },
+  { name:'X運用', market:4, competition:3, profit:5, tags:['X運用','SNS運用','発信'], keywords:['X運用','Twitter運用','X収益化'], desc:'note導線と相性がいい' },
+  { name:'投資・資産運用', market:4, competition:3, profit:5, tags:['投資','株','資産運用'], keywords:['投資初心者','資産運用','新NISA'], desc:'初心者向けが特に人気' },
+  { name:'英語・語学', market:3, competition:2, profit:3, badge:'new', tags:['英語','語学','学習'], keywords:['英語学習','TOEIC','英会話'], desc:'TOEIC等の資格系が特に強い' },
+  { name:'料理・レシピ', market:3, competition:2, profit:2, tags:['料理','レシピ','食'], keywords:['作り置き','節約レシピ','時短料理'], desc:'無料でフォロワー集めやすい' },
+  { name:'旅行・暮らし', market:3, competition:2, profit:2, tags:['旅行','暮らし','ライフスタイル'], keywords:['ひとり旅','地方移住','暮らしの工夫'], desc:'ニッチな地域情報が狙い目' },
+  { name:'メンタルヘルス', market:4, competition:2, profit:3, badge:'new', tags:['メンタル','心理','HSP'], keywords:['メンタルヘルス','HSP','ストレス対策'], desc:'HSP等のニッチが伸びている' },
+  { name:'AI・ChatGPT活用', market:5, competition:3, profit:5, badge:'hot', tags:['AI','ChatGPT','テクノロジー'], keywords:['ChatGPT活用','AI副業','生成AI'], desc:'プロンプト集や活用法が人気' },
+  { name:'生成AIプロンプト', market:4, competition:3, profit:5, badge:'hot', tags:['生成AI','プロンプト','AI'], keywords:['プロンプト','ChatGPTプロンプト','画像生成AI'], desc:'テンプレ販売や有料記事にしやすい' },
+  { name:'フリーランス・独立', market:3, competition:2, profit:4, badge:'blue', tags:['フリーランス','独立','起業'], keywords:['フリーランス','独立準備','案件獲得'], desc:'収入公開系の高エンゲージメント' },
+  { name:'音楽・エンタメ', market:2, competition:1, profit:2, tags:['音楽','エンタメ','趣味'], keywords:['音楽活動','推し活','ライブレポ'], desc:'熱心なファンがつきやすい' },
+  { name:'介護・福祉', market:2, competition:1, profit:3, badge:'new', tags:['介護','福祉','高齢者'], keywords:['介護','親の介護','福祉現場'], desc:'競合極少。実体験に価値がある' },
+  { name:'スポーツ・筋トレ', market:3, competition:2, profit:3, tags:['筋トレ','スポーツ','フィットネス'], keywords:['筋トレ','宅トレ','ランニング'], desc:'ビフォーアフター+メニュー系鉄板' },
 ];
 
 const skillOptions = ['ビジネス経験','プログラミング','ライティング','デザイン','マーケティング','SNS運用','投資経験','語学力','料理が得意','旅行好き','メンタルケア知識','子育て経験','転職経験','フリーランス経験','AI・テクノロジー','健康・フィットネス','恋愛・婚活経験','介護経験','音楽・芸術','教育経験'];
@@ -869,15 +890,17 @@ function renderGenres(list) {
   const g = document.getElementById('genreGrid');
   if(!list.length){g.innerHTML='<div class="empty-state"><p>条件に一致するジャンルがありません</p></div>';return;}
   g.innerHTML = list.map(x => {
+    const idx = genres.indexOf(x);
     const rec = x.profit>=4&&x.competition<=2;
     const badge = x.badge==='hot'?'<span class="genre-badge badge-hot">人気</span>':x.badge==='blue'?'<span class="genre-badge badge-blue">狙い目</span>':x.badge==='new'?'<span class="genre-badge badge-new">成長中</span>':'';
-    return `<div class="genre-card ${rec?'recommended':''}" onclick="pickGenreKeyword('${x.tags[0]}')" style="cursor:pointer" title="クリックで記事リサーチに反映"><div class="genre-name">${x.name} ${badge} ${rec?'<span class="tag">おすすめ</span>':''}</div><div class="genre-scores"><div class="genre-score-row"><span>市場規模</span>${scoreDots(x.market,5,'market')}</div><div class="genre-score-row"><span>競合度</span>${scoreDots(x.competition,5,'competition')}</div><div class="genre-score-row"><span>収益性</span>${scoreDots(x.profit,5,'profit')}</div></div><div class="genre-desc">${x.desc}</div></div>`;
+    const keywords = (x.keywords||x.tags).map((kw,ki)=>`<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();setResearchKeyword(${idx},${ki})">${escapeHtml(kw)}</button>`).join('');
+    return `<div class="genre-card ${rec?'recommended':''}" onclick="pickGenreKeyword(${idx})" style="cursor:pointer" title="クリックで候補キーワードを表示"><div class="genre-name">${x.name} ${badge} ${rec?'<span class="tag">おすすめ</span>':''}</div><div class="genre-scores"><div class="genre-score-row"><span>市場規模</span>${scoreDots(x.market,5,'market')}</div><div class="genre-score-row"><span>競合度</span>${scoreDots(x.competition,5,'competition')}</div><div class="genre-score-row"><span>収益性</span>${scoreDots(x.profit,5,'profit')}</div></div><div class="genre-desc">${x.desc}</div><div class="chip-group mt-12">${keywords}</div></div>`;
   }).join('');
 }
 
 function filterGenres() {
   const p=parseInt(document.getElementById('filterProfit').value)||0, c=parseInt(document.getElementById('filterCompetition').value)||99, k=document.getElementById('filterKeyword').value.toLowerCase();
-  renderGenres(genres.filter(g=>g.profit>=p&&g.competition<=c&&(k===''||g.name.toLowerCase().includes(k)||g.tags.some(t=>t.toLowerCase().includes(k)))));
+  renderGenres(genres.filter(g=>g.profit>=p&&g.competition<=c&&(k===''||g.name.toLowerCase().includes(k)||g.tags.some(t=>t.toLowerCase().includes(k))||(g.keywords||[]).some(t=>t.toLowerCase().includes(k)))));
 }
 function resetGenreFilter() { ['filterProfit','filterCompetition'].forEach(id=>document.getElementById(id).value=''); document.getElementById('filterKeyword').value=''; renderGenres(genres); }
 
@@ -897,27 +920,49 @@ function renderSkillMatches() {
 // ========================================
 // Note Search & Research Guide
 // ========================================
-function pickGenreKeyword(tag) {
-  document.getElementById('scrapeKeyword').value = tag;
+function renderKeywordOptions(idx) {
+  const g = genres[idx];
+  const box = document.getElementById('keywordOptions');
+  if (!g || !box) return;
+  box.classList.add('active');
+  box.innerHTML = `<div class="keyword-option-title">「${escapeHtml(g.name)}」の候補キーワード</div><div class="chip-group">${g.keywords.map((kw,ki)=>`<button class="btn btn-secondary btn-sm" onclick="setResearchKeyword(${idx},${ki})">${escapeHtml(kw)}</button>`).join('')}</div>`;
+}
+
+function setResearchKeyword(idx, keywordIdx) {
+  const g = genres[idx];
+  if (!g) return;
+  const keyword = (g.keywords || g.tags)[keywordIdx] || g.name;
+  document.getElementById('scrapeKeyword').value = keyword;
+  renderKeywordOptions(idx);
   document.getElementById('scrapeKeyword').scrollIntoView({ behavior: 'smooth', block: 'center' });
-  showToast(`「${tag}」をセットしました`);
+  showToast(`「${keyword}」をセットしました`);
+}
+
+function pickGenreKeyword(idx) {
+  const g = genres[idx];
+  if (!g) return;
+  setResearchKeyword(idx, 0);
 }
 
 function openNoteSearch() {
   const keyword = document.getElementById('scrapeKeyword').value.trim();
   if (!keyword) { showToast('キーワードを入力してください'); return; }
   const sort = document.getElementById('scrapeSort').value;
+  const price = document.getElementById('scrapePrice').value;
   const sortParam = sort === 'like' ? 'like' : 'new';
-  const url = `https://note.com/search?q=${encodeURIComponent(keyword)}&context=note&sort=${sortParam}`;
+  const priceLabel = price === 'paid' ? '有料記事' : price === 'free' ? '無料記事' : 'すべて';
+  const query = price === 'paid' ? `${keyword} 有料` : price === 'free' ? `${keyword} 無料` : keyword;
+  const displayKeyword = price === 'all' ? keyword : `${keyword}（${priceLabel}）`;
+  const url = `https://note.com/search?q=${encodeURIComponent(query)}&context=note&sort=${sortParam}`;
   window.open(url, '_blank');
 
-  document.getElementById('researchKw').textContent = keyword;
+  document.getElementById('researchKw').textContent = displayKeyword;
   document.getElementById('researchGuide').style.display = 'block';
   document.getElementById('researchGuide').scrollIntoView({ behavior: 'smooth' });
 
   // Load saved memo for this keyword
   const memos = D.researchMemos || {};
-  document.getElementById('researchMemo').value = memos[keyword] || '';
+  document.getElementById('researchMemo').value = memos[displayKeyword] || '';
   renderResearch();
 }
 
